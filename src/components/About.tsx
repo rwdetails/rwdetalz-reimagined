@@ -7,33 +7,15 @@ const About = () => {
             Meet the <span className="glow-text">Founders</span>
           </h2>
           
-          <div className="space-y-6 text-lg text-muted-foreground">
-            <p>
-              RWDetailz was built by <span className="text-primary font-semibold">Rakeem</span> and{" "}
-              <span className="text-primary font-semibold">Wood</span> — two 15-year-old entrepreneurs 
-              who saw an opportunity to do things differently in the cleaning industry.
-            </p>
-            
-            <p>
-              While most kids their age are focused on school and social media, Rakeem and Wood are 
-              building a real business from the ground up. They're not afraid to get their hands dirty, 
-              literally and figuratively. From power washing driveways at dawn to managing bookings 
-              and customer service, they handle it all.
-            </p>
-            
-            <p>
-              What sets RWDetailz apart isn't just the quality of work — it's the <span className="text-primary font-semibold">energy</span>, 
-              the <span className="text-primary font-semibold">innovation</span>, and the{" "}
-              <span className="text-primary font-semibold">attention to detail</span> that only 
-              young, hungry entrepreneurs can bring. They're proving that age is just a number when 
-              you've got drive, dedication, and a vision for something better.
-            </p>
-            
-            <p className="text-foreground font-medium pt-4">
-              Every job is personal. Every client becomes part of the RWDetailz story. 
-              And every surface they clean shines with the pride of young founders building their legacy.
-            </p>
-          </div>
+          <p className="text-lg text-muted-foreground leading-relaxed mb-6">
+            RWDetailz was started by <span className="text-primary font-semibold">Rakeem and Wood</span> — two 15-year-old entrepreneurs bringing fresh energy and next-gen quality to power washing.
+          </p>
+          <p className="text-lg text-muted-foreground leading-relaxed mb-6">
+            We combine cutting-edge techniques with eco-friendly practices to deliver results that exceed expectations. Our youth drives our innovation, and our dedication ensures every job is done right.
+          </p>
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            Whether it's a residential driveway, commercial property, or roof cleaning, we bring the same level of energy and attention to detail to every project. Our mission is simple: make everything we touch look brand new.
+          </p>
 
           <div className="mt-10 pt-8 border-t border-border text-center">
             <p className="text-sm text-muted-foreground italic">

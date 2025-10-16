@@ -78,6 +78,7 @@ All colors MUST be HSL.
   }
 
   .glow-text {
+    color: hsl(var(--glow));
     text-shadow: 0 0 20px hsl(var(--glow) / 0.5);
   }
 
