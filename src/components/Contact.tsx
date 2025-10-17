@@ -17,6 +17,7 @@ const Contact = () => {
     date: "",
     time: "",
     details: "",
+    hearAbout: "",
   });
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,7 +26,7 @@ const Contact = () => {
     { name: "Pressure Washing", price: "$79.99" },
     { name: "Roof & Gutter Cleaning", price: "$99.99" },
     { name: "Driveway & Sidewalk Cleaning", price: "$59.99" },
-    { name: "Vehicle Wash & Detailing", price: "Coming Soon", disabled: true },
+    { name: "Trash Can Cleaning", price: "$39.99" },
   ];
 
   const handleServiceToggle = (serviceName: string) => {
@@ -41,7 +42,7 @@ const Contact = () => {
     setIsSubmitting(true);
 
     // Validation
-    if (!formData.name || !formData.email || !formData.phone || !formData.address || !formData.date || !formData.time) {
+    if (!formData.name || !formData.email || !formData.phone || !formData.address || !formData.date || !formData.time || !formData.hearAbout) {
       toast({
         title: "Missing Information",
         description: "Please fill out all required fields.",
@@ -72,6 +73,7 @@ const Contact = () => {
           time: formData.time,
           services: selectedServices,
           details: formData.details,
+          hearAbout: formData.hearAbout,
         },
       });
 
@@ -91,6 +93,7 @@ const Contact = () => {
         date: "",
         time: "",
         details: "",
+        hearAbout: "",
       });
       setSelectedServices([]);
     } catch (error: any) {
@@ -295,6 +298,27 @@ const Contact = () => {
                 </ul>
               </div>
             )}
+
+            <div>
+              <label htmlFor="hearAbout" className="block text-sm font-medium mb-2">
+                How did you hear about us? *
+              </label>
+              <select
+                id="hearAbout"
+                value={formData.hearAbout}
+                onChange={(e) => setFormData({ ...formData, hearAbout: e.target.value })}
+                required
+                className="w-full bg-background/50 border border-border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="">Select an option</option>
+                <option value="Google">Google</option>
+                <option value="Instagram">Instagram</option>
+                <option value="TikTok">TikTok</option>
+                <option value="Friend">Friend / Referral</option>
+                <option value="Nextdoor">Nextdoor</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
 
             <div>
               <label htmlFor="details" className="block text-sm font-medium mb-2">

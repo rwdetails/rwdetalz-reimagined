@@ -1,4 +1,4 @@
-import { Droplets, Home, Car, Sparkles } from "lucide-react";
+import { Droplets, Home, Car, Sparkles, Trash2, Wind, Sun, Fence, Droplet, Waves, SprayCan } from "lucide-react";
 
 const services = [
   {
@@ -20,10 +20,58 @@ const services = [
     features: ["Deep clean", "Mold removal", "Eco-safe soap", "Restored appearance"],
   },
   {
+    icon: Trash2,
+    title: "Trash Can Cleaning",
+    price: "$39.99",
+    features: ["Sanitize bins", "Remove odors", "Eco-friendly", "Monthly service available"],
+  },
+  {
+    icon: Wind,
+    title: "Window Cleaning",
+    price: "Coming Soon",
+    features: ["Streak-free shine", "Interior & exterior", "Screen cleaning", "High-rise capable"],
+    comingSoon: true,
+  },
+  {
+    icon: Fence,
+    title: "Fence & Deck Restoration",
+    price: "Coming Soon",
+    features: ["Wood restoration", "Stain removal", "Sealing available", "Like-new finish"],
+    comingSoon: true,
+  },
+  {
     icon: Car,
     title: "Vehicle Wash & Detailing",
     price: "Coming Soon",
     features: ["Hand wash", "Tire shine", "Wax finish", "Interior detail"],
+    comingSoon: true,
+  },
+  {
+    icon: Home,
+    title: "House Exterior Wash",
+    price: "Coming Soon",
+    features: ["Full exterior clean", "Siding safe", "Mold & mildew removal", "Boosts curb appeal"],
+    comingSoon: true,
+  },
+  {
+    icon: Sun,
+    title: "Solar Panel Cleaning",
+    price: "Coming Soon",
+    features: ["Efficiency boost", "Gentle cleaning", "Water-fed poles", "Eco-friendly"],
+    comingSoon: true,
+  },
+  {
+    icon: Waves,
+    title: "Pool Deck Pressure Wash",
+    price: "Coming Soon",
+    features: ["Non-slip safe", "Algae removal", "Chemical-free option", "Quick-dry"],
+    comingSoon: true,
+  },
+  {
+    icon: SprayCan,
+    title: "Graffiti Removal",
+    price: "Coming Soon",
+    features: ["Surface-safe", "Complete removal", "Fast response", "Commercial & residential"],
     comingSoon: true,
   },
 ];
@@ -41,7 +89,7 @@ const Services = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {services.map((service, index) => {
             const Icon = service.icon;
             return (
