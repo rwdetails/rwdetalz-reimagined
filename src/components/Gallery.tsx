@@ -24,8 +24,7 @@ const Gallery = () => {
       : galleryImages.filter((img) => img.category === selectedCategory);
 
   return (
-    <section className="py-24 px-4 min-h-screen">
-      <div className="container mx-auto">
+    <div className="container mx-auto">
         <div className="text-center mb-12 animate-fade-in">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Our <span className="glow-text">Gallery</span>
@@ -106,8 +105,7 @@ const Gallery = () => {
             </Card>
           ))}
         </div>
-      </div>
-    </section>
+    </div>
   );
 };
 
