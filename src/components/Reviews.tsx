@@ -53,8 +53,7 @@ const Reviews = () => {
   };
 
   return (
-    <section className="py-24 px-4 min-h-screen">
-      <div className="container mx-auto max-w-6xl">
+    <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12 animate-fade-in">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Customer <span className="glow-text">Reviews</span>
@@ -169,8 +168,7 @@ const Reviews = () => {
           </p>
           <Button variant="outline">View Google Reviews</Button>
         </div>
-      </div>
-    </section>
+    </div>
   );
 };
 
