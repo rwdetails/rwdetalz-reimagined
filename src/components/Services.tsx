@@ -1,4 +1,4 @@
-import { Droplets, Home, Car, Sparkles, Trash2, PaintBucket, Fence, Building } from "lucide-react";
+import { Droplets, Home, Car, Sparkles } from "lucide-react";
 
 const services = [
   {
@@ -20,37 +20,10 @@ const services = [
     features: ["Deep clean", "Mold removal", "Eco-safe soap", "Restored appearance"],
   },
   {
-    icon: Trash2,
-    title: "Trashcan Cleaning",
-    price: "$29.99",
-    features: ["Deep sanitization", "Odor elimination", "Monthly service", "Eco-friendly"],
-  },
-  {
     icon: Car,
     title: "Vehicle Wash & Detailing",
     price: "Coming Soon",
     features: ["Hand wash", "Tire shine", "Wax finish", "Interior detail"],
-    comingSoon: true,
-  },
-  {
-    icon: Fence,
-    title: "Fence & Deck Cleaning",
-    price: "Coming Soon",
-    features: ["Wood restoration", "Stain prep", "Gentle wash", "UV protection"],
-    comingSoon: true,
-  },
-  {
-    icon: PaintBucket,
-    title: "Pool Deck Cleaning",
-    price: "Coming Soon",
-    features: ["Slip resistance", "Chemical safe", "Algae removal", "Quick dry"],
-    comingSoon: true,
-  },
-  {
-    icon: Building,
-    title: "Commercial Services",
-    price: "Coming Soon",
-    features: ["Large scale", "Scheduled service", "Custom plans", "Insurance ready"],
     comingSoon: true,
   },
 ];
@@ -68,7 +41,7 @@ const Services = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {services.map((service, index) => {
             const Icon = service.icon;
             return (
