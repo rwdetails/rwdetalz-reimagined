@@ -20,10 +20,58 @@ const services = [
     features: ["Deep clean", "Mold removal", "Eco-safe soap", "Restored appearance"],
   },
   {
+    icon: Home,
+    title: "Trash Can Cleaning",
+    price: "$39.99",
+    features: ["Deep sanitization", "Deodorizing", "Bacteria removal", "Eco-friendly"],
+  },
+  {
+    icon: Home,
+    title: "Window Cleaning",
+    price: "Coming Soon",
+    features: ["Streak-free", "Interior & exterior", "Screen cleaning", "Frame detailing"],
+    comingSoon: true,
+  },
+  {
+    icon: Home,
+    title: "Fence & Deck Restoration",
+    price: "Coming Soon",
+    features: ["Wood treatment", "Stain removal", "Sealing", "Color restoration"],
+    comingSoon: true,
+  },
+  {
     icon: Car,
     title: "Vehicle Wash & Detailing",
     price: "Coming Soon",
     features: ["Hand wash", "Tire shine", "Wax finish", "Interior detail"],
+    comingSoon: true,
+  },
+  {
+    icon: Home,
+    title: "House Exterior Wash",
+    price: "Coming Soon",
+    features: ["Full exterior", "Soft wash", "Mold/mildew removal", "Window cleaning"],
+    comingSoon: true,
+  },
+  {
+    icon: Sparkles,
+    title: "Solar Panel Cleaning",
+    price: "Coming Soon",
+    features: ["Efficiency boost", "Gentle cleaning", "Panel inspection", "Maintenance tips"],
+    comingSoon: true,
+  },
+  {
+    icon: Droplets,
+    title: "Pool Deck Pressure Wash",
+    price: "Coming Soon",
+    features: ["Non-slip coating", "Algae removal", "Stain treatment", "Chemical-safe"],
+    comingSoon: true,
+  },
+  {
+    icon: Sparkles,
+    title: "Graffiti Removal",
+    price: "Coming Soon",
+    features: ["Paint removal", "Surface safe", "Quick response", "No damage"],
     comingSoon: true,
   },
 ];
@@ -41,7 +89,7 @@ const Services = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {services.map((service, index) => {
             const Icon = service.icon;
             return (
