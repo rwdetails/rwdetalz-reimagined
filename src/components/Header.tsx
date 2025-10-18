@@ -1,113 +1,84 @@
 import { Button } from "@/components/ui/button";
-import { Phone, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
-interface HeaderProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-}
+const Header = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-const navItems = [
-  { id: "home", label: "Home" },
-  { id: "services", label: "Services" },
-  { id: "gallery", label: "Gallery" },
-  { id: "about", label: "About" },
-  { id: "reviews", label: "Reviews" },
-  { id: "faq", label: "FAQ" },
-  { id: "careers", label: "Careers" },
-  { id: "contact", label: "Contact" },
-  { id: "track", label: "Track Job" },
-];
-
-const Header = ({ activeTab, setActiveTab }: HeaderProps) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleNavClick = (tabId: string) => {
-    setActiveTab(tabId);
-    setMobileMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+      setIsMenuOpen(false);
+    }
   };
 
   return (
-    <header className="fixed top-0 w-full z-50 glass-card border-b border-border/50">
-      <div className="container mx-auto px-4 h-20 flex items-center justify-between">
-        <button 
-          onClick={() => handleNavClick("home")} 
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-        >
-          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center glow-border">
-            <span className="text-2xl font-bold glow-text">RW</span>
+    <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50">
+      <nav className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div className="text-2xl font-bold glow-text">
+            RW<span className="text-primary">Detailz</span>
           </div>
-          <span className="text-xl font-bold hidden sm:block">RWDetailz</span>
-        </button>
 
-        <nav className="hidden lg:flex items-center gap-4">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`px-3 py-2 rounded-lg transition-all ${
-                activeTab === item.id
-                  ? "bg-primary/20 text-primary font-semibold"
-                  : "hover:text-primary hover:bg-primary/10"
-              }`}
-            >
-              {item.label}
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-8">
+            <button onClick={() => scrollToSection("home")} className="text-foreground hover:text-primary transition-colors">
+              Home
             </button>
-          ))}
-        </nav>
+            <button onClick={() => scrollToSection("services")} className="text-foreground hover:text-primary transition-colors">
+              Services
+            </button>
+            <button onClick={() => scrollToSection("why")} className="text-foreground hover:text-primary transition-colors">
+              Why Us
+            </button>
+            <button onClick={() => scrollToSection("about")} className="text-foreground hover:text-primary transition-colors">
+              About
+            </button>
+            <button onClick={() => scrollToSection("track")} className="text-foreground hover:text-primary transition-colors">
+              Track
+            </button>
+            <button onClick={() => scrollToSection("contact")} className="text-foreground hover:text-primary transition-colors">
+              Contact
+            </button>
+            <Button variant="glow" size="sm" onClick={() => scrollToSection("contact")}>
+              Book Now
+            </Button>
+          </div>
 
-        <div className="flex items-center gap-4">
-          <a
-            href="tel:9548656205"
-            className="hidden sm:flex items-center gap-2 text-sm hover:text-primary transition-colors"
-          >
-            <Phone className="w-4 h-4" />
-            (954) 865-6205
-          </a>
-          <Button variant="glow" onClick={() => handleNavClick("book")} className="hidden sm:flex">
-            Book Now
-          </Button>
-          
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 hover:bg-primary/10 rounded-lg transition-colors"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {/* Mobile Menu Button */}
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden text-foreground">
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
-      </div>
 
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl"
-          >
-            <nav className="container mx-auto px-4 py-4 flex flex-col gap-2">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item.id)}
-                  className={`px-4 py-3 rounded-lg text-left transition-all ${
-                    activeTab === item.id
-                      ? "bg-primary/20 text-primary font-semibold"
-                      : "hover:text-primary hover:bg-primary/10"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-              <Button variant="glow" onClick={() => handleNavClick("book")} className="mt-2">
-                Book Now
-              </Button>
-            </nav>
-          </motion.div>
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden mt-4 flex flex-col gap-4 py-4 animate-fade-in">
+            <button onClick={() => scrollToSection("home")} className="text-foreground hover:text-primary transition-colors text-left">
+              Home
+            </button>
+            <button onClick={() => scrollToSection("services")} className="text-foreground hover:text-primary transition-colors text-left">
+              Services
+            </button>
+            <button onClick={() => scrollToSection("why")} className="text-foreground hover:text-primary transition-colors text-left">
+              Why Us
+            </button>
+            <button onClick={() => scrollToSection("about")} className="text-foreground hover:text-primary transition-colors text-left">
+              About
+            </button>
+            <button onClick={() => scrollToSection("track")} className="text-foreground hover:text-primary transition-colors text-left">
+              Track
+            </button>
+            <button onClick={() => scrollToSection("contact")} className="text-foreground hover:text-primary transition-colors text-left">
+              Contact
+            </button>
+            <Button variant="glow" size="sm" onClick={() => scrollToSection("contact")} className="w-full">
+              Book Now
+            </Button>
+          </div>
         )}
-      </AnimatePresence>
+      </nav>
     </header>
   );
 };
