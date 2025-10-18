@@ -2,7 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
-const Header = () => {
+interface HeaderProps {
+  onBookNowClick: () => void;
+}
+
+const Header = ({ onBookNowClick }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const scrollToSection = (id: string) => {
@@ -11,6 +15,11 @@ const Header = () => {
       element.scrollIntoView({ behavior: "smooth" });
       setIsMenuOpen(false);
     }
+  };
+
+  const handleBookNow = () => {
+    onBookNowClick();
+    setIsMenuOpen(false);
   };
 
   return (
@@ -41,7 +50,7 @@ const Header = () => {
             <button onClick={() => scrollToSection("contact")} className="text-foreground hover:text-primary transition-colors">
               Contact
             </button>
-            <Button variant="glow" size="sm" onClick={() => scrollToSection("contact")}>
+            <Button variant="glow" size="sm" onClick={handleBookNow}>
               Book Now
             </Button>
           </div>
@@ -73,7 +82,7 @@ const Header = () => {
             <button onClick={() => scrollToSection("contact")} className="text-foreground hover:text-primary transition-colors text-left">
               Contact
             </button>
-            <Button variant="glow" size="sm" onClick={() => scrollToSection("contact")} className="w-full">
+            <Button variant="glow" size="sm" onClick={handleBookNow} className="w-full">
               Book Now
             </Button>
           </div>
