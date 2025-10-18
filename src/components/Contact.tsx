@@ -1,6 +1,26 @@
 import { Mail, Phone, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { toast } from "sonner";
+import { useState } from "react";
 
 const Contact = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success("Thank you! We'll get back to you soon.");
+    setFormData({ name: "", email: "", phone: "", message: "" });
+  };
+
   return (
     <section id="contact" className="py-24 px-4 bg-secondary/30">
       <div className="container mx-auto max-w-6xl">
@@ -13,8 +33,8 @@ const Contact = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="glass-card rounded-xl p-6 animate-fade-in">
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <Card className="glass-card p-6 animate-fade-in">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center mb-4 glow-border">
                 <Phone className="w-8 h-8 text-primary" />
@@ -24,9 +44,9 @@ const Contact = () => {
                 (954) 865-6205
               </a>
             </div>
-          </div>
+          </Card>
 
-          <div className="glass-card rounded-xl p-6 animate-fade-in">
+          <Card className="glass-card p-6 animate-fade-in">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center mb-4 glow-border">
                 <Mail className="w-8 h-8 text-primary" />
@@ -36,9 +56,9 @@ const Contact = () => {
                 rwdetailz@gmail.com
               </a>
             </div>
-          </div>
+          </Card>
 
-          <div className="glass-card rounded-xl p-6 animate-fade-in">
+          <Card className="glass-card p-6 animate-fade-in">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center mb-4 glow-border">
                 <MapPin className="w-8 h-8 text-primary" />
@@ -48,8 +68,62 @@ const Contact = () => {
                 South Florida & Surrounding Areas
               </p>
             </div>
-          </div>
+          </Card>
         </div>
+
+        <Card className="glass-card p-8 max-w-2xl mx-auto">
+          <h3 className="text-2xl font-bold mb-6 text-center">Send Us a Message</h3>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  placeholder="Your name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone *</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  required
+                  placeholder="(954) 865-6205"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                placeholder="your@email.com"
+              />
+            </div>
+            <div>
+              <Label htmlFor="message">Message *</Label>
+              <Textarea
+                id="message"
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                required
+                placeholder="Tell us about your project..."
+                rows={5}
+              />
+            </div>
+            <Button type="submit" variant="glow" className="w-full">
+              Send Message
+            </Button>
+          </form>
+        </Card>
       </div>
     </section>
   );
