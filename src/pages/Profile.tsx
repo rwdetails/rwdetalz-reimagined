@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { LogOut, ArrowLeft, Package, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { LogOut, ArrowLeft, Package, Clock, CheckCircle2, XCircle, Edit, Mail, Phone, MapPin, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -30,6 +33,13 @@ export default function Profile() {
   const [profile, setProfile] = useState<any>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editForm, setEditForm] = useState({
+    full_name: "",
+    phone: "",
+    email: "",
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -54,6 +64,11 @@ export default function Profile() {
       console.error("Error loading profile:", error);
     } else {
       setProfile(data);
+      setEditForm({
+        full_name: data.full_name || "",
+        phone: data.phone || "",
+        email: data.email || "",
+      });
     }
   };
 
@@ -78,6 +93,61 @@ export default function Profile() {
     await supabase.auth.signOut();
     toast.success("Logged out successfully");
     navigate("/");
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    setEditLoading(true);
+    try {
+      // Update profile info
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: editForm.full_name,
+          phone: editForm.phone,
+          email: editForm.email,
+        })
+        .eq("id", user.id);
+
+      if (profileError) throw profileError;
+
+      // If email changed, update auth email
+      if (editForm.email !== profile.email) {
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: editForm.email,
+        });
+
+        if (emailError) throw emailError;
+        
+        toast.success("Profile updated! Please check your new email to confirm the change.");
+      } else {
+        toast.success("Profile updated successfully!");
+      }
+
+      await loadProfile(user.id);
+      setEditDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      toast.error(error.message || "Failed to update profile");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(profile?.email, {
+        redirectTo: `${window.location.origin}/`,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password reset email sent! Check your inbox.");
+    } catch (error: any) {
+      console.error("Error sending reset email:", error);
+      toast.error(error.message || "Failed to send reset email");
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -130,23 +200,125 @@ export default function Profile() {
 
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="text-3xl">My Profile</CardTitle>
-              <CardDescription>Manage your bookings and account</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Name</p>
+                  <CardTitle className="text-3xl">My Profile</CardTitle>
+                  <CardDescription>Manage your bookings and account</CardDescription>
+                </div>
+                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Edit Profile</DialogTitle>
+                      <DialogDescription>
+                        Update your personal information
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-name">
+                          <UserIcon className="w-4 h-4 inline mr-2" />
+                          Full Name
+                        </Label>
+                        <Input
+                          id="edit-name"
+                          value={editForm.full_name}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, full_name: e.target.value })
+                          }
+                          placeholder="John Doe"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-email">
+                          <Mail className="w-4 h-4 inline mr-2" />
+                          Email
+                        </Label>
+                        <Input
+                          id="edit-email"
+                          type="email"
+                          value={editForm.email}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, email: e.target.value })
+                          }
+                          placeholder="john@example.com"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Changing your email requires verification
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-phone">
+                          <Phone className="w-4 h-4 inline mr-2" />
+                          Phone Number
+                        </Label>
+                        <Input
+                          id="edit-phone"
+                          type="tel"
+                          value={editForm.phone}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, phone: e.target.value })
+                          }
+                          placeholder="(954) 865-6205"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => setEditDialogOpen(false)}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleSaveProfile}
+                        disabled={editLoading}
+                        className="flex-1"
+                      >
+                        {editLoading ? "Saving..." : "Save Changes"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <UserIcon className="w-4 h-4" />
+                    <span>Name</span>
+                  </div>
                   <p className="font-semibold">{profile?.full_name || "N/A"}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="w-4 h-4" />
+                    <span>Email</span>
+                  </div>
                   <p className="font-semibold">{profile?.email || "N/A"}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Phone</p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="w-4 h-4" />
+                    <span>Phone</span>
+                  </div>
                   <p className="font-semibold">{profile?.phone || "N/A"}</p>
                 </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex flex-wrap gap-3">
+                <Button variant="outline" onClick={handleChangePassword}>
+                  Change Password
+                </Button>
               </div>
             </CardContent>
           </Card>
