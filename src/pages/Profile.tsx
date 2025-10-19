@@ -27,6 +27,9 @@ interface Booking {
   payment_method: string;
   address: string;
   created_at: string;
+  full_name: string;
+  email: string;
+  phone: string;
 }
 
 export default function Profile() {
