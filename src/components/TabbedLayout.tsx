@@ -51,7 +51,7 @@ const TabbedLayout = () => {
         </div>
 
         <TabsContent value="home" className="mt-0 animate-fade-in">
-          <Hero />
+          <Hero onBookNowClick={() => setActiveTab("booking")} />
         </TabsContent>
 
         <TabsContent value="services" className="mt-0 animate-fade-in">
@@ -59,7 +59,7 @@ const TabbedLayout = () => {
         </TabsContent>
 
         <TabsContent value="booking" className="mt-0 animate-fade-in">
-          <BookingForm />
+          <BookingForm onClose={() => setActiveTab("home")} />
         </TabsContent>
 
         <TabsContent value="tracker" className="mt-0 animate-fade-in">
