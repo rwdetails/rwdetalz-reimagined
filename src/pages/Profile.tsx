@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { LogOut, ArrowLeft, Package, Clock, CheckCircle2, XCircle, Edit, Mail, Phone, MapPin, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -40,6 +42,8 @@ export default function Profile() {
     phone: "",
     email: "",
   });
+  const [cancelling, setCancelling] = useState<Record<string, boolean>>({});
+  const [cancelReasons, setCancelReasons] = useState<Record<string, string>>({});
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -182,6 +186,47 @@ export default function Profile() {
   const pastBookings = bookings.filter(
     (b) => b.status === "completed" || b.status === "cancelled"
   );
+
+  const handleCancelBooking = async (booking: Booking) => {
+    if (!user) return;
+    setCancelling((prev) => ({ ...prev, [booking.id]: true }));
+    try {
+      const { error: updateError } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .eq("id", booking.id)
+        .eq("user_id", user.id);
+      if (updateError) throw updateError;
+
+      const servicesList = Array.isArray(booking.services)
+        ? (booking.services as any[]).map((s: any) => s.name || String(s))
+        : [];
+
+      const { error: emailError } = await supabase.functions.invoke("send-cancellation-email", {
+        body: {
+          bookingNumber: booking.booking_number,
+          name: profile?.full_name || (booking as any).full_name || "",
+          email: profile?.email || (booking as any).email || "",
+          phone: profile?.phone || "",
+          address: booking.address,
+          date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
+          time: booking.service_time,
+          services: servicesList,
+          totalAmount: booking.total_amount,
+          reason: cancelReasons[booking.id] || "",
+        },
+      });
+      if (emailError) console.error("Cancellation email error:", emailError);
+
+      setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "cancelled" } : b)));
+      toast.success("Booking cancelled");
+    } catch (e: any) {
+      console.error("Cancel booking error:", e);
+      toast.error(e.message || "Failed to cancel booking");
+    } finally {
+      setCancelling((prev) => ({ ...prev, [booking.id]: false }));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
@@ -404,6 +449,42 @@ export default function Profile() {
                             {booking.payment_method} - {booking.payment_status}
                           </p>
                         </div>
+                      </div>
+
+                      <div className="pt-4 flex items-center justify-end">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">
+                              Cancel Booking
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. We’ll notify RWDetailz and the customer via email.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <div className="space-y-2">
+                              <Label htmlFor={`reason-${booking.id}`}>Reason (optional)</Label>
+                              <Textarea
+                                id={`reason-${booking.id}`}
+                                placeholder="Tell us why you're cancelling"
+                                value={cancelReasons[booking.id] || ""}
+                                onChange={(e) => setCancelReasons((prev) => ({ ...prev, [booking.id]: e.target.value }))}
+                              />
+                            </div>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep Booking</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleCancelBooking(booking)}
+                                disabled={!!cancelling[booking.id]}
+                              >
+                                {cancelling[booking.id] ? "Cancelling..." : "Confirm Cancel"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </CardContent>
                   </Card>
