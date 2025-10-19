@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,7 +51,7 @@ const Contact = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           <Card className="glass-card p-6 animate-fade-in">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center mb-4 glow-border">
@@ -85,6 +85,19 @@ const Contact = () => {
               <p className="text-muted-foreground">
                 South Florida & Surrounding Areas
               </p>
+            </div>
+          </Card>
+
+          <Card className="glass-card p-6 animate-fade-in">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center mb-4 glow-border">
+                <DollarSign className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="font-bold text-xl mb-2">Payment</h3>
+              <div className="text-muted-foreground text-sm space-y-1">
+                <p>Zelle: 754-245-4962</p>
+                <p>CashApp: @KeenooLmao</p>
+              </div>
             </div>
           </Card>
         </div>

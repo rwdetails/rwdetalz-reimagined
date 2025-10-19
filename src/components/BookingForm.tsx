@@ -38,6 +38,7 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
     services: [] as string[],
     instructions: "",
     source: "",
+    paymentMethod: "",
   });
 
   const generateBookingId = () => {
@@ -87,7 +88,7 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
       if (error) throw error;
 
       toast.success("Booking confirmed! Check your email.");
-      setStep(4);
+      setStep(5);
     } catch (error) {
       console.error("Booking error:", error);
       toast.error("Failed to send booking. Please contact us at (954) 865-6205.");
@@ -299,15 +300,90 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
                 Back
               </Button>
               <Button
+                onClick={() => setStep(4)}
+                disabled={!formData.date || !formData.time || !formData.source}
+                variant="glow"
+                className="flex-1"
+              >
+                Next: Payment
+              </Button>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <h3 className="text-2xl font-bold glow-text">Payment Information</h3>
+            <div className="glass-card p-6 rounded-lg space-y-4">
+              <p className="text-muted-foreground">
+                Total Amount: <span className="text-2xl font-bold text-primary">${calculateTotal()}</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Please select your preferred payment method and complete payment to confirm your booking.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <Label>Select Payment Method *</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div
+                  onClick={() => setFormData({ ...formData, paymentMethod: "zelle" })}
+                  className={cn(
+                    "glass-card p-6 rounded-lg cursor-pointer transition-all hover-lift",
+                    formData.paymentMethod === "zelle" && "ring-2 ring-primary bg-primary/10"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-bold text-lg">Zelle</h4>
+                    <Checkbox checked={formData.paymentMethod === "zelle"} />
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-muted-foreground">Send payment to:</p>
+                    <p className="font-mono text-primary font-bold text-base">754-245-4962</p>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setFormData({ ...formData, paymentMethod: "cashapp" })}
+                  className={cn(
+                    "glass-card p-6 rounded-lg cursor-pointer transition-all hover-lift",
+                    formData.paymentMethod === "cashapp" && "ring-2 ring-primary bg-primary/10"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-bold text-lg">Cash App</h4>
+                    <Checkbox checked={formData.paymentMethod === "cashapp"} />
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-muted-foreground">Send payment to:</p>
+                    <p className="font-mono text-primary font-bold text-base">@KeenooLmao</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-card p-4 rounded-lg bg-primary/5">
+              <p className="text-sm text-muted-foreground">
+                <strong>Important:</strong> After sending payment via {formData.paymentMethod === "zelle" ? "Zelle" : "Cash App"}, 
+                please include your booking details in the payment note and click confirm below.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button onClick={() => setStep(3)} variant="outline" className="flex-1">
+                Back
+              </Button>
+              <Button
                 onClick={handleSubmit}
-                disabled={!formData.date || !formData.time || !formData.source || loading}
+                disabled={!formData.paymentMethod || loading}
                 variant="glow"
                 className="flex-1"
               >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
+                    Confirming...
                   </>
                 ) : (
                   "Confirm Booking"
@@ -317,7 +393,7 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
           </div>
         );
 
-      case 4:
+      case 5:
         return (
           <div className="text-center space-y-6 animate-fade-in py-8">
             <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto glow-border">
@@ -332,6 +408,15 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
               <p className="text-2xl font-bold text-primary">{bookingId}</p>
               <p className="text-xs text-muted-foreground mt-4">
                 Save this ID to track your service
+              </p>
+            </div>
+            <div className="glass-card p-4 rounded-lg max-w-md mx-auto bg-primary/5">
+              <p className="text-sm font-semibold mb-2">Payment Details</p>
+              <p className="text-sm text-muted-foreground">
+                {formData.paymentMethod === "zelle" ? "Zelle: 754-245-4962" : "Cash App: @KeenooLmao"}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Amount: <span className="text-primary font-bold">${calculateTotal()}</span>
               </p>
             </div>
             <div className="space-y-3">
@@ -376,9 +461,9 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
           </Button>
         </div>
 
-        {step < 4 && (
+        {step < 5 && (
           <div className="flex items-center justify-center gap-2 mb-8">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
                 className={cn(
