@@ -266,6 +266,22 @@ export default function Profile() {
       const { error: updateError } = await qb;
       if (updateError) throw updateError;
 
+      const servicesList = Array.isArray(booking.services)
+        ? (booking.services as any[]).map((s: any) => s.name || String(s))
+        : [];
+      await supabase.functions.invoke("send-completion-email", {
+        body: {
+          bookingNumber: booking.booking_number,
+          name: (booking as any).full_name || profile?.full_name || "",
+          email: (booking as any).email || profile?.email || "",
+          address: booking.address,
+          date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
+          time: booking.service_time,
+          services: servicesList,
+          totalAmount: booking.total_amount,
+        },
+      });
+
       setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "completed" } : b)));
       setAllBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "completed" } : b)));
       toast.success("Booking marked completed");
