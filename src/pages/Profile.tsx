@@ -55,6 +55,23 @@ export default function Profile() {
   const [banning, setBanning] = useState<Record<string, boolean>>({});
   const isOwner = (user?.email || "").toLowerCase() === "rwdetailz@gmail.com";
 
+  const LOCAL_OVERRIDES_KEY = "booking_overrides";
+  const readOverrides = (): Record<string, Partial<Booking>> => {
+    try { return JSON.parse(localStorage.getItem(LOCAL_OVERRIDES_KEY) || "{}"); } catch { return {}; }
+  };
+  const writeOverrides = (data: Record<string, Partial<Booking>>) => {
+    localStorage.setItem(LOCAL_OVERRIDES_KEY, JSON.stringify(data));
+  };
+  const applyOverrides = (list: Booking[]) => {
+    const o = readOverrides();
+    return list.map((b) => ({ ...b, ...(o[b.id] || {}) }));
+  };
+  const setOverride = (id: string, patch: Partial<Booking>) => {
+    const o = readOverrides();
+    o[id] = { ...(o[id] || {}), ...patch };
+    writeOverrides(o);
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
@@ -105,7 +122,7 @@ export default function Profile() {
       console.error("Error loading bookings:", error);
       toast.error("Failed to load bookings");
     } else {
-      setBookings(data || []);
+      setBookings(applyOverrides(data || []));
     }
     setLoading(false);
   };
@@ -121,7 +138,7 @@ export default function Profile() {
       console.error("Error loading all bookings:", error);
       toast.error("Failed to load all bookings");
     } else {
-      setAllBookings(data || []);
+      setAllBookings(applyOverrides(data || []));
     }
     setAllLoading(false);
   };
@@ -290,6 +307,7 @@ export default function Profile() {
       toast.error(e.message || "Failed to cancel booking");
     } finally {
       setCancelling((prev) => ({ ...prev, [booking.id]: false }));
+      setOverride(booking.id, { status: "cancelled" });
     }
   };
 
@@ -326,6 +344,7 @@ export default function Profile() {
       toast.error(e.message || "Failed to complete booking");
     } finally {
       setCompleting((prev) => ({ ...prev, [booking.id]: false }));
+      setOverride(booking.id, { status: "completed" });
     }
   };
 
