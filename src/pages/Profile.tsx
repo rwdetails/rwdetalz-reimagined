@@ -47,6 +47,10 @@ export default function Profile() {
   });
   const [cancelling, setCancelling] = useState<Record<string, boolean>>({});
   const [cancelReasons, setCancelReasons] = useState<Record<string, string>>({});
+  const [completing, setCompleting] = useState<Record<string, boolean>>({});
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
+  const [allLoading, setAllLoading] = useState(false);
+  const isOwner = (user?.email || "").toLowerCase() === "rwdetailz@gmail.com";
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -59,6 +63,13 @@ export default function Profile() {
       }
     });
   }, [navigate]);
+
+  useEffect(() => {
+    if (isOwner) {
+      loadAllBookings();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOwner]);
 
   const loadProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -94,6 +105,22 @@ export default function Profile() {
       setBookings(data || []);
     }
     setLoading(false);
+  };
+
+  const loadAllBookings = async () => {
+    setAllLoading(true);
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error loading all bookings:", error);
+      toast.error("Failed to load all bookings");
+    } else {
+      setAllBookings(data || []);
+    }
+    setAllLoading(false);
   };
 
   const handleLogout = async () => {
@@ -194,11 +221,9 @@ export default function Profile() {
     if (!user) return;
     setCancelling((prev) => ({ ...prev, [booking.id]: true }));
     try {
-      const { error: updateError } = await supabase
-        .from("bookings")
-        .update({ status: "cancelled" })
-        .eq("id", booking.id)
-        .eq("user_id", user.id);
+      const qb = supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
+      if (!isOwner) qb.eq("user_id", user.id);
+      const { error: updateError } = await qb;
       if (updateError) throw updateError;
 
       const servicesList = Array.isArray(booking.services)
@@ -208,9 +233,9 @@ export default function Profile() {
       const { error: emailError } = await supabase.functions.invoke("send-cancellation-email", {
         body: {
           bookingNumber: booking.booking_number,
-          name: profile?.full_name || (booking as any).full_name || "",
-          email: profile?.email || (booking as any).email || "",
-          phone: profile?.phone || "",
+          name: (booking as any).full_name || profile?.full_name || "",
+          email: (booking as any).email || profile?.email || "",
+          phone: (booking as any).phone || profile?.phone || "",
           address: booking.address,
           date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
           time: booking.service_time,
@@ -222,12 +247,33 @@ export default function Profile() {
       if (emailError) console.error("Cancellation email error:", emailError);
 
       setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "cancelled" } : b)));
+      setAllBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "cancelled" } : b)));
       toast.success("Booking cancelled");
     } catch (e: any) {
       console.error("Cancel booking error:", e);
       toast.error(e.message || "Failed to cancel booking");
     } finally {
       setCancelling((prev) => ({ ...prev, [booking.id]: false }));
+    }
+  };
+
+  const handleCompleteBooking = async (booking: Booking) => {
+    if (!user) return;
+    setCompleting((prev) => ({ ...prev, [booking.id]: true }));
+    try {
+      const qb = supabase.from("bookings").update({ status: "completed" }).eq("id", booking.id);
+      if (!isOwner) qb.eq("user_id", user.id);
+      const { error: updateError } = await qb;
+      if (updateError) throw updateError;
+
+      setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "completed" } : b)));
+      setAllBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "completed" } : b)));
+      toast.success("Booking marked completed");
+    } catch (e: any) {
+      console.error("Complete booking error:", e);
+      toast.error(e.message || "Failed to complete booking");
+    } finally {
+      setCompleting((prev) => ({ ...prev, [booking.id]: false }));
     }
   };
 
@@ -372,13 +418,18 @@ export default function Profile() {
           </Card>
 
           <Tabs defaultValue="active" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className={`grid w-full ${isOwner ? "grid-cols-3" : "grid-cols-2"}`}>
               <TabsTrigger value="active">
                 Active Bookings ({activeBookings.length})
               </TabsTrigger>
               <TabsTrigger value="past">
                 Past Bookings ({pastBookings.length})
               </TabsTrigger>
+              {isOwner && (
+                <TabsTrigger value="owner">
+                  Owner Panel
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="active" className="space-y-4 mt-6">
@@ -494,6 +545,131 @@ export default function Profile() {
                 ))
               )}
             </TabsContent>
+
+            {isOwner && (
+              <TabsContent value="owner" className="space-y-4 mt-6">
+                {allLoading ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">Loading all bookings...</p>
+                  </div>
+                ) : allBookings.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">No bookings found</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  allBookings.map((booking) => (
+                    <Card key={booking.id} className="hover-lift">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-xl">
+                              Booking #{booking.booking_number}
+                            </CardTitle>
+                            <CardDescription>
+                              {format(new Date(booking.service_date), "PPP")} at {booking.service_time}
+                            </CardDescription>
+                          </div>
+                          <Badge className={getStatusColor(booking.status || "scheduled")}>
+                            <span className="flex items-center gap-1">
+                              {getStatusIcon(booking.status || "scheduled")}
+                              {booking.status}
+                            </span>
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">Customer</p>
+                            <p className="font-semibold">{booking.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{booking.email}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Address</p>
+                            <p className="font-semibold">{booking.address}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Total</p>
+                            <p className="font-semibold text-primary">${booking.total_amount}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Payment</p>
+                            <p className="font-semibold capitalize">{booking.payment_method} - {booking.payment_status}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-2">Services</p>
+                          <div className="flex flex-wrap gap-2">
+                            {Array.isArray(booking.services) && (booking.services as any[]).map((service: any, idx: number) => (
+                              <Badge key={idx} variant="outline">{service.name || String(service)}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <Separator />
+                        <div className="flex items-center justify-end gap-2">
+                          {booking.status !== "completed" && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  disabled={!!completing[booking.id]}
+                                >
+                                  {completing[booking.id] ? "Completing..." : "Mark Completed"}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Mark booking as completed?</AlertDialogTitle>
+                                  <AlertDialogDescription>This will notify the customer when they check their profile.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleCompleteBooking(booking)}>
+                                    Confirm
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                          {booking.status !== "cancelled" && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm" disabled={!!cancelling[booking.id]}>
+                                  {cancelling[booking.id] ? "Cancelling..." : "Cancel"}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+                                  <AlertDialogDescription>This cannot be undone. An email will be sent to the customer.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`owner-reason-${booking.id}`}>Reason (optional)</Label>
+                                  <Textarea
+                                    id={`owner-reason-${booking.id}`}
+                                    placeholder="Reason for cancellation"
+                                    value={cancelReasons[booking.id] || ""}
+                                    onChange={(e) => setCancelReasons((prev) => ({ ...prev, [booking.id]: e.target.value }))}
+                                  />
+                                </div>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Keep</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleCancelBooking(booking)}>Confirm Cancel</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </TabsContent>
+            )}
 
             <TabsContent value="past" className="space-y-4 mt-6">
               {loading ? (
