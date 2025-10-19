@@ -14,7 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          address: string
+          booking_number: string
+          created_at: string | null
+          email: string
+          full_name: string
+          how_heard: string | null
+          id: string
+          payment_method: string | null
+          payment_status: string | null
+          phone: string
+          service_date: string
+          service_time: string
+          services: Json
+          special_instructions: string | null
+          status: string | null
+          stripe_payment_id: string | null
+          total_amount: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address: string
+          booking_number: string
+          created_at?: string | null
+          email: string
+          full_name: string
+          how_heard?: string | null
+          id?: string
+          payment_method?: string | null
+          payment_status?: string | null
+          phone: string
+          service_date: string
+          service_time: string
+          services: Json
+          special_instructions?: string | null
+          status?: string | null
+          stripe_payment_id?: string | null
+          total_amount: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string
+          booking_number?: string
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          how_heard?: string | null
+          id?: string
+          payment_method?: string | null
+          payment_status?: string | null
+          phone?: string
+          service_date?: string
+          service_time?: string
+          services?: Json
+          special_instructions?: string | null
+          status?: string | null
+          stripe_payment_id?: string | null
+          total_amount?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name: string
+          id: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
