@@ -50,6 +50,9 @@ export default function Profile() {
   const [completing, setCompleting] = useState<Record<string, boolean>>({});
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [allLoading, setAllLoading] = useState(false);
+  const [allProfiles, setAllProfiles] = useState<any[]>([]);
+  const [allProfilesLoading, setAllProfilesLoading] = useState(false);
+  const [banning, setBanning] = useState<Record<string, boolean>>({});
   const isOwner = (user?.email || "").toLowerCase() === "rwdetailz@gmail.com";
 
   useEffect(() => {
@@ -121,6 +124,39 @@ export default function Profile() {
       setAllBookings(data || []);
     }
     setAllLoading(false);
+  };
+
+  const loadAllProfiles = async () => {
+    setAllProfilesLoading(true);
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Error loading profiles:", error);
+      toast.error("Failed to load users");
+    } else {
+      setAllProfiles(data as any[]);
+    }
+    setAllProfilesLoading(false);
+  };
+
+  const handleBanToggle = async (id: string, next: boolean) => {
+    if (!isOwner) return;
+    setBanning((p) => ({ ...p, [id]: true }));
+    try {
+      const { error } = await supabase.functions.invoke("admin-set-ban", {
+        body: { userId: id, banned: next },
+      });
+      if (error) throw error;
+      setAllProfiles((list) => list.map((u) => (u.id === id ? { ...u, banned: next } : u)));
+      toast.success(next ? "User banned" : "User unbanned");
+    } catch (e: any) {
+      console.error("Ban toggle error:", e);
+      toast.error(e.message || "Failed to update ban status");
+    } finally {
+      setBanning((p) => ({ ...p, [id]: false }));
+    }
   };
 
   const handleLogout = async () => {
@@ -684,6 +720,61 @@ export default function Profile() {
                     </Card>
                   ))
                 )}
+                <Separator />
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Users</CardTitle>
+                    <CardDescription>Ban or unban accounts</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {allProfilesLoading ? (
+                      <p className="text-muted-foreground">Loading users...</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="text-left text-muted-foreground">
+                              <th className="py-2">Name</th>
+                              <th className="py-2">Email</th>
+                              <th className="py-2">Phone</th>
+                              <th className="py-2">Created</th>
+                              <th className="py-2">Status</th>
+                              <th className="py-2 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {allProfiles.map((u) => (
+                              <tr key={u.id} className="border-t border-border">
+                                <td className="py-2">{u.full_name}</td>
+                                <td className="py-2">{u.email}</td>
+                                <td className="py-2">{u.phone || "-"}</td>
+                                <td className="py-2">{u.created_at ? format(new Date(u.created_at), "PP") : "-"}</td>
+                                <td className="py-2">
+                                  {(u as any).banned ? (
+                                    <Badge variant="destructive">banned</Badge>
+                                  ) : (
+                                    <Badge className="bg-green-500/10 text-green-500 border-green-500/20">active</Badge>
+                                  )}
+                                </td>
+                                <td className="py-2 text-right">
+                                  {(u as any).banned ? (
+                                    <Button size="sm" variant="outline" disabled={!!banning[u.id]} onClick={() => handleBanToggle(u.id, false)}>
+                                      {banning[u.id] ? "Updating..." : "Unban"}
+                                    </Button>
+                                  ) : (
+                                    <Button size="sm" variant="destructive" disabled={!!banning[u.id]} onClick={() => handleBanToggle(u.id, true)}>
+                                      {banning[u.id] ? "Updating..." : "Ban"}
+                                    </Button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
             )}
 
