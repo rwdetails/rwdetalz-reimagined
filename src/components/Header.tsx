@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronRight } from "lucide-react";
+import { Menu, X, ChevronRight, LogOut, LogIn } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,8 +17,22 @@ interface HeaderProps {
 }
 
 const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -53,6 +70,17 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
 
   const handleBookNow = () => {
     onBookNowClick();
+    setIsMenuOpen(false);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Logged out successfully");
+    setIsMenuOpen(false);
+  };
+
+  const handleLogin = () => {
+    navigate("/auth");
     setIsMenuOpen(false);
   };
 
@@ -105,6 +133,17 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
             <Button variant="glow" size="sm" onClick={handleBookNow}>
               Book Now
             </Button>
+            {user ? (
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleLogin}>
+                <LogIn className="w-4 h-4 mr-2" />
+                Login
+              </Button>
+            )}
           </div>
 
           <div className="hidden md:flex lg:hidden items-center gap-4">
@@ -144,6 +183,15 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
             <Button variant="glow" size="sm" onClick={handleBookNow}>
               Book Now
             </Button>
+            {user ? (
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleLogin}>
+                <LogIn className="w-4 h-4" />
+              </Button>
+            )}
           </div>
 
           <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden text-foreground">
@@ -180,6 +228,17 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
             <Button variant="glow" size="sm" onClick={handleBookNow} className="w-full">
               Book Now
             </Button>
+            {user ? (
+              <Button variant="outline" size="sm" onClick={handleLogout} className="w-full">
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleLogin} className="w-full">
+                <LogIn className="w-4 h-4 mr-2" />
+                Login
+              </Button>
+            )}
           </div>
         )}
       </nav>

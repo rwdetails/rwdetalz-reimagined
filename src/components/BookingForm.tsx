@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CalendarIcon, Check, Loader2, X } from "lucide-react";
+import { CalendarIcon, Check, Loader2, X, Upload, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,9 +26,13 @@ interface BookingFormProps {
 }
 
 const BookingForm = ({ onClose }: BookingFormProps) => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [bookingId, setBookingId] = useState("");
+  const [user, setUser] = useState<any>(null);
+  const [images, setImages] = useState<File[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -40,6 +45,33 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
     source: "",
     paymentMethod: "",
   });
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        toast.error("Please log in to book a service");
+        navigate("/auth");
+      } else {
+        setUser(session.user);
+        // Pre-fill form with user data
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (data) {
+              setFormData((prev) => ({
+                ...prev,
+                fullName: data.full_name || "",
+                email: data.email || "",
+                phone: data.phone || "",
+              }));
+            }
+          });
+      }
+    });
+  }, [navigate]);
 
   const generateBookingId = () => {
     return `RW-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
@@ -61,6 +93,52 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
     }, 0);
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (images.length + files.length > 5) {
+      toast.error("Maximum 5 images allowed");
+      return;
+    }
+    setImages([...images, ...files]);
+  };
+
+  const removeImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async () => {
+    if (!user || images.length === 0) return [];
+
+    setUploadingImages(true);
+    const uploadedUrls: string[] = [];
+
+    try {
+      for (const image of images) {
+        const fileExt = image.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('booking-images')
+          .upload(fileName, image);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('booking-images')
+          .getPublicUrl(fileName);
+
+        uploadedUrls.push(publicUrl);
+      }
+    } catch (error) {
+      console.error("Image upload error:", error);
+      toast.error("Failed to upload images");
+    } finally {
+      setUploadingImages(false);
+    }
+
+    return uploadedUrls;
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     const newBookingId = generateBookingId();
@@ -72,6 +150,9 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
     const selectedServiceNames = selectedServices.map(s => s.name);
 
     try {
+      // Upload images first
+      const imageUrls = await uploadImages();
+
       const { error } = await supabase.functions.invoke("send-booking-email", {
         body: {
           name: formData.fullName,
@@ -82,6 +163,7 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
           time: formData.time,
           services: selectedServiceNames,
           details: formData.instructions,
+          imageUrls: imageUrls,
         },
       });
 
@@ -209,6 +291,58 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
         return (
           <div className="space-y-6 animate-fade-in">
             <h3 className="text-2xl font-bold glow-text">Schedule & Details</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <Label>Upload Images (Required - Max 5) *</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Please upload photos of areas to be cleaned
+                </p>
+                <div className="space-y-3">
+                  <label htmlFor="image-upload" className="cursor-pointer">
+                    <div className="glass-card p-6 rounded-lg border-2 border-dashed hover:border-primary transition-colors flex flex-col items-center gap-2">
+                      <Upload className="h-8 w-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Click to upload images
+                      </span>
+                    </div>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                  </label>
+                  
+                  {images.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {images.map((image, index) => (
+                        <div key={index} className="relative glass-card p-2 rounded-lg">
+                          <img
+                            src={URL.createObjectURL(image)}
+                            alt={`Upload ${index + 1}`}
+                            className="w-full h-24 object-cover rounded"
+                          />
+                          <button
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                            <ImageIcon className="h-3 w-3" />
+                            <span className="truncate">{image.name}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-4">
               <div>
                 <Label>Preferred Date *</Label>
@@ -301,7 +435,7 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
               </Button>
               <Button
                 onClick={() => setStep(4)}
-                disabled={!formData.date || !formData.time || !formData.source}
+                disabled={!formData.date || !formData.time || !formData.source || images.length === 0}
                 variant="glow"
                 className="flex-1"
               >

@@ -17,6 +17,7 @@ interface BookingRequest {
   time: string;
   services: string[];
   details: string;
+  imageUrls?: string[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -29,6 +30,18 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Received booking request:", bookingData);
 
     const servicesHtml = bookingData.services.map(service => `<li>${service}</li>`).join("");
+    const imagesHtml = bookingData.imageUrls && bookingData.imageUrls.length > 0
+      ? `<div style="margin-top: 20px;">
+          <p><strong>Uploaded Images:</strong></p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+            ${bookingData.imageUrls.map(url => `
+              <div>
+                <img src="${url}" alt="Booking image" style="width: 100%; max-width: 200px; height: auto; border-radius: 8px;" />
+              </div>
+            `).join('')}
+          </div>
+        </div>`
+      : '';
 
     // Send email to business
     const businessEmail = await resend.emails.send({
@@ -47,6 +60,7 @@ const handler = async (req: Request): Promise<Response> => {
         <ul>${servicesHtml}</ul>
         <p><strong>Additional Details:</strong></p>
         <p>${bookingData.details || "None provided"}</p>
+        ${imagesHtml}
       `,
     });
 
