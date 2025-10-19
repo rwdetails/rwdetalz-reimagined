@@ -140,6 +140,11 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
   };
 
   const handleSubmit = async () => {
+    if (!user) {
+      toast.error("Please log in to complete booking");
+      return;
+    }
+
     setLoading(true);
     const newBookingId = generateBookingId();
     setBookingId(newBookingId);
@@ -148,12 +153,35 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
       .filter((s) => formData.services.includes(s.id));
 
     const selectedServiceNames = selectedServices.map(s => s.name);
+    const totalAmount = calculateTotal();
 
     try {
       // Upload images first
       const imageUrls = await uploadImages();
 
-      const { error } = await supabase.functions.invoke("send-booking-email", {
+      // Save booking to database
+      const { error: dbError } = await supabase.from("bookings").insert({
+        user_id: user.id,
+        booking_number: newBookingId,
+        full_name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        service_date: formData.date,
+        service_time: formData.time,
+        services: selectedServices.map(s => ({ id: s.id, name: s.name, price: s.price })),
+        total_amount: totalAmount,
+        special_instructions: formData.instructions,
+        how_heard: formData.source,
+        payment_method: formData.paymentMethod,
+        status: "scheduled",
+        payment_status: "pending",
+      } as any);
+
+      if (dbError) throw dbError;
+
+      // Send confirmation emails
+      const { error: emailError } = await supabase.functions.invoke("send-booking-email", {
         body: {
           name: formData.fullName,
           email: formData.email,
@@ -167,7 +195,7 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
         },
       });
 
-      if (error) throw error;
+      if (emailError) console.error("Email error:", emailError);
 
       toast.success("Booking confirmed! Check your email.");
       setStep(5);
