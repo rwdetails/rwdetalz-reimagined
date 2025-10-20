@@ -283,21 +283,40 @@ export default function Profile() {
         ? (booking.services as any[]).map((s: any) => s.name || String(s))
         : [];
 
-      const { error: emailError } = await supabase.functions.invoke("send-cancellation-email", {
-        body: {
-          bookingNumber: booking.booking_number,
-          name: (booking as any).full_name || profile?.full_name || "",
-          email: (booking as any).email || profile?.email || "",
-          phone: (booking as any).phone || profile?.phone || "",
-          address: booking.address,
-          date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
-          time: booking.service_time,
-          services: servicesList,
-          totalAmount: booking.total_amount,
-          reason: cancelReasons[booking.id] || "",
-        },
-      });
-      if (emailError) console.error("Cancellation email error:", emailError);
+      try {
+        const { error: emailError } = await supabase.functions.invoke("send-cancellation-email", {
+          body: {
+            bookingNumber: booking.booking_number,
+            name: (booking as any).full_name || profile?.full_name || "",
+            email: (booking as any).email || profile?.email || "",
+            phone: (booking as any).phone || profile?.phone || "",
+            address: booking.address,
+            date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
+            time: booking.service_time,
+            services: servicesList,
+            totalAmount: booking.total_amount,
+            reason: cancelReasons[booking.id] || "",
+          },
+        });
+        if (emailError) throw emailError;
+      } catch (err) {
+        await fetch("/api/send-cancellation-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bookingNumber: booking.booking_number,
+            name: (booking as any).full_name || profile?.full_name || "",
+            email: (booking as any).email || profile?.email || "",
+            phone: (booking as any).phone || profile?.phone || "",
+            address: booking.address,
+            date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
+            time: booking.service_time,
+            services: servicesList,
+            totalAmount: booking.total_amount,
+            reason: cancelReasons[booking.id] || "",
+          }),
+        });
+      }
 
       setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "cancelled" } : b)));
       setAllBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "cancelled" } : b)));
@@ -323,18 +342,36 @@ export default function Profile() {
       const servicesList = Array.isArray(booking.services)
         ? (booking.services as any[]).map((s: any) => s.name || String(s))
         : [];
-      await supabase.functions.invoke("send-completion-email", {
-        body: {
-          bookingNumber: booking.booking_number,
-          name: (booking as any).full_name || profile?.full_name || "",
-          email: (booking as any).email || profile?.email || "",
-          address: booking.address,
-          date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
-          time: booking.service_time,
-          services: servicesList,
-          totalAmount: booking.total_amount,
-        },
-      });
+      try {
+        const { error } = await supabase.functions.invoke("send-completion-email", {
+          body: {
+            bookingNumber: booking.booking_number,
+            name: (booking as any).full_name || profile?.full_name || "",
+            email: (booking as any).email || profile?.email || "",
+            address: booking.address,
+            date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
+            time: booking.service_time,
+            services: servicesList,
+            totalAmount: booking.total_amount,
+          },
+        });
+        if (error) throw error;
+      } catch (err) {
+        await fetch("/api/send-completion-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bookingNumber: booking.booking_number,
+            name: (booking as any).full_name || profile?.full_name || "",
+            email: (booking as any).email || profile?.email || "",
+            address: booking.address,
+            date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
+            time: booking.service_time,
+            services: servicesList,
+            totalAmount: booking.total_amount,
+          }),
+        });
+      }
 
       setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "completed" } : b)));
       setAllBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "completed" } : b)));
