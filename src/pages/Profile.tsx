@@ -595,6 +595,7 @@ export default function Profile() {
 
             {isOwner && (
               <TabsContent value="owner" className="space-y-4 mt-6">
+                <OwnerAIChat bookings={allBookings} />
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Filter className="w-4 h-4"/> Owner Tools</CardTitle>
