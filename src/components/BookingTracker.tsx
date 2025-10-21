@@ -1,19 +1,68 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Search, Package, CheckCircle2, Clock, Truck, XCircle } from "lucide-react";
+import { Search, Package, CheckCircle2, Clock, Truck, XCircle, MapPin, Share2, StopCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Fix default marker icons for Leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
+
+const LOCAL_OVERRIDES_KEY = "booking_overrides";
 
 const BookingTracker = () => {
   const [bookingId, setBookingId] = useState("");
   const [bookingStatus, setBookingStatus] = useState<any>(null);
   const [searching, setSearching] = useState(false);
+
+  // Realtime tracking state
+  const [liveLocation, setLiveLocation] = useState<{ lat: number; lng: number; ts?: number } | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const readOverrides = (): Record<string, Partial<any>> => {
+    try { return JSON.parse(localStorage.getItem(LOCAL_OVERRIDES_KEY) || "{}"); } catch { return {}; }
+  };
+  const applyOverridesToItem = (item: any) => {
+    const overrides = readOverrides();
+    const o = overrides[item.id] || {};
+    return { ...item, ...o };
+  };
+
+  const ensureChannel = (channelName: string) => {
+    if (channelRef.current && channelRef.current.topic === channelName) return channelRef.current;
+    if (channelRef.current) {
+      try { channelRef.current.unsubscribe(); } catch {}
+    }
+    const ch = supabase.channel(channelName, { config: { broadcast: { ack: true } } });
+    ch.on("broadcast", { event: "location" }, (payload) => {
+      const p = (payload as any).payload as { lat: number; lng: number; ts?: number };
+      if (p && typeof p.lat === "number" && typeof p.lng === "number") {
+        setLiveLocation(p);
+      }
+    });
+    ch.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        // ready to receive/send
+      }
+    });
+    channelRef.current = ch;
+    return ch;
+  };
 
   const handleSearch = async () => {
     if (!bookingId.trim()) {
@@ -32,17 +81,79 @@ const BookingTracker = () => {
       if (error || !data) {
         toast.error("Booking not found");
         setBookingStatus(null);
+        setLiveLocation(null);
+        if (channelRef.current) channelRef.current.unsubscribe();
+        channelRef.current = null;
       } else {
-        setBookingStatus(data);
+        const merged = applyOverridesToItem(data);
+        setBookingStatus(merged);
+        const ch = ensureChannel(`tracking:${merged.booking_number}`);
+        // Optionally request last known location here if you persist it elsewhere
       }
     } catch (error) {
       console.error("Error fetching booking:", error);
       toast.error("Failed to fetch booking");
       setBookingStatus(null);
+      setLiveLocation(null);
     } finally {
       setSearching(false);
     }
   };
+
+  const startSharing = async () => {
+    if (!bookingStatus?.booking_number) {
+      toast.error("Search a booking first");
+      return;
+    }
+    const ch = ensureChannel(`tracking:${bookingStatus.booking_number}`);
+
+    if (!("geolocation" in navigator)) {
+      toast.error("Geolocation is not supported on this device");
+      return;
+    }
+
+    try {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const payload = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            ts: Date.now(),
+          };
+          setLiveLocation(payload);
+          ch.send({ type: "broadcast", event: "location", payload });
+        },
+        (err) => {
+          console.error("Geolocation error:", err);
+          toast.error("Location error: " + err.message);
+          stopSharing();
+        },
+        { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+      );
+      watchIdRef.current = watchId as unknown as number;
+      setSharing(true);
+      toast.success("Sharing live location");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Failed to start sharing location");
+    }
+  };
+
+  const stopSharing = () => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    setSharing(false);
+    toast.success("Stopped sharing location");
+  };
+
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      if (channelRef.current) channelRef.current.unsubscribe();
+    };
+  }, []);
 
   const getStatusIcon = () => {
     switch (bookingStatus?.status) {
@@ -80,7 +191,7 @@ const BookingTracker = () => {
             Track Your <span className="glow-text">Booking</span>
           </h2>
           <p className="text-muted-foreground text-lg">
-            Enter your booking ID to check your service status
+            Enter your booking ID to check your service status and live location
           </p>
         </div>
 
@@ -168,7 +279,7 @@ const BookingTracker = () => {
               <Separator />
 
               <div className="glass-card p-3 rounded-lg">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Total Amount</p>
                     <p className="font-bold text-primary text-lg">
@@ -181,17 +292,48 @@ const BookingTracker = () => {
                       {bookingStatus.payment_status}
                     </p>
                   </div>
+                  <div className="flex items-end justify-end gap-2">
+                    {!sharing ? (
+                      <Button variant="secondary" onClick={startSharing}>
+                        <Share2 className="w-4 h-4 mr-2" /> Share My Location
+                      </Button>
+                    ) : (
+                      <Button variant="outline" onClick={stopSharing}>
+                        <StopCircle className="w-4 h-4 mr-2" /> Stop Sharing
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {bookingStatus.special_instructions && (
-                <>
+              {liveLocation && (
+                <div className="space-y-3">
                   <Separator />
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">Special Instructions</p>
-                    <p className="text-sm">{bookingStatus.special_instructions}</p>
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    <span>Live location active</span>
                   </div>
-                </>
+                  <div className="h-[360px] rounded-lg overflow-hidden border border-border">
+                    <MapContainer
+                      center={[liveLocation.lat, liveLocation.lng]}
+                      zoom={13}
+                      style={{ height: "100%", width: "100%" }}
+                    >
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      <Marker position={[liveLocation.lat, liveLocation.lng]}>
+                        <Popup>Live location</Popup>
+                      </Marker>
+                      <Circle
+                        center={[liveLocation.lat, liveLocation.lng]}
+                        radius={1500}
+                        pathOptions={{ color: "hsl(var(--primary))", fillOpacity: 0.1 }}
+                      />
+                    </MapContainer>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
