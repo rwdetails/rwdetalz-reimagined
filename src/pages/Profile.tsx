@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LogOut, ArrowLeft, Package, Clock, CheckCircle2, XCircle, Edit, Mail, Phone, MapPin, User as UserIcon, Share2, StopCircle, Filter } from "lucide-react";
+import OwnerAIChat from "@/components/OwnerAIChat";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
