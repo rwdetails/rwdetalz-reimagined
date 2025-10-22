@@ -18,12 +18,11 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Sign up (email OTP)
+  // Sign up (email/password)
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
-  const [signupCodeSent, setSignupCodeSent] = useState(false);
-  const [signupOtp, setSignupOtp] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
   const [signupLoading, setSignupLoading] = useState(false);
 
   // Phone sign-in (OTP)
@@ -62,44 +61,23 @@ export default function Auth() {
     }
   };
 
-  // Email OTP signup flow
-  const handleSendSignUpCode = async (e: React.FormEvent) => {
+  // Email/password signup flow
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignupLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
+      const { data, error } = await supabase.auth.signUp({
         email: signupEmail,
+        password: signupPassword,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
           data: { full_name: fullName, phone },
-          shouldCreateUser: true,
         },
       });
       if (error) throw error;
-      setSignupCodeSent(true);
-      toast.success("Verification code sent to your email.");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to send code.");
-    } finally {
-      setSignupLoading(false);
-    }
-  };
-
-  const handleVerifySignUpCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!signupOtp) return toast.error("Enter the code from your email");
-    setSignupLoading(true);
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: signupEmail,
-        token: signupOtp,
-        type: "email",
-      });
-      if (error) throw error;
-      toast.success("Account created and signed in!");
+      toast.success("Account created successfully!");
       navigate("/");
     } catch (e: any) {
-      toast.error(e.message || "Invalid or expired code.");
+      toast.error(e.message || "Failed to create account.");
     } finally {
       setSignupLoading(false);
     }
@@ -199,7 +177,7 @@ export default function Auth() {
             </TabsContent>
 
             <TabsContent value="signup">
-              <form onSubmit={signupCodeSent ? handleVerifySignUpCode : handleSendSignUpCode} className="space-y-4">
+              <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name"><UserIcon className="inline w-4 h-4 mr-1"/> Full Name</Label>
                   <Input id="signup-name" type="text" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
@@ -212,21 +190,13 @@ export default function Auth() {
                   <Label htmlFor="signup-email"><Mail className="inline w-4 h-4 mr-1"/> Email</Label>
                   <Input id="signup-email" type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required />
                 </div>
-                {!signupCodeSent ? (
-                  <Button type="submit" className="w-full" disabled={signupLoading}>
-                    {signupLoading ? "Sending..." : "Send Verification Code"}
-                  </Button>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-otp"><ShieldCheck className="inline w-4 h-4 mr-1"/> Enter Code</Label>
-                      <Input id="signup-otp" placeholder="6-digit code" value={signupOtp} onChange={(e) => setSignupOtp(e.target.value)} required />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={signupLoading}>
-                      {signupLoading ? "Verifying..." : "Verify & Create Account"}
-                    </Button>
-                  </>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password"><Lock className="inline w-4 h-4 mr-1"/> Password</Label>
+                  <Input id="signup-password" type="password" placeholder="••••••••" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required minLength={6} />
+                </div>
+                <Button type="submit" className="w-full" disabled={signupLoading}>
+                  {signupLoading ? "Creating Account..." : "Create Account"}
+                </Button>
               </form>
             </TabsContent>
           </Tabs>
