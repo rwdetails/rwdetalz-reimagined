@@ -205,8 +205,8 @@ export default function Auth() {
                   <Input id="signup-name" type="text" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-phone"><Phone className="inline w-4 h-4 mr-1"/> Phone</Label>
-                  <Input id="signup-phone" type="tel" placeholder="(954) 865-6205" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                  <Label htmlFor="signup-phone"><Phone className="inline w-4 h-4 mr-1"/> Phone (optional)</Label>
+                  <Input id="signup-phone" type="tel" placeholder="(954) 865-6205" value={phone} onChange={(e) => setPhone(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email"><Mail className="inline w-4 h-4 mr-1"/> Email</Label>
