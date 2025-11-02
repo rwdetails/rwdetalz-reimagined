@@ -9,6 +9,7 @@ import BookingTracker from "@/components/BookingTracker";
 import Contact from "@/components/Contact";
 import BookingForm from "@/components/BookingForm";
 import Footer from "@/components/Footer";
+import WorldwideUsers from "@/components/WorldwideUsers";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -29,6 +30,7 @@ const Index = () => {
             <Hero onBookNowClick={() => setShowBooking(true)} />
             <Services />
             <WhyUs />
+            <WorldwideUsers />
             <About />
             <section id="reviews-gallery" className="py-24 px-4">
               <div className="container mx-auto">
