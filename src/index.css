@@ -8,50 +8,50 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* RWDetailz Dark Futuristic Theme */
-    --background: 217 28% 7%;
-    --foreground: 0 0% 98%;
+    /* Pure Black & White Theme - Inspired by Modern Sleek Design */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
 
-    --card: 217 28% 10%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 217 28% 8%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 100%;
 
-    /* Electric Blue Primary */
-    --primary: 195 100% 50%;
-    --primary-foreground: 217 28% 7%;
+    /* White/Light Gray Primary for high contrast */
+    --primary: 0 0% 95%;
+    --primary-foreground: 0 0% 10%;
 
-    --secondary: 217 28% 15%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217 28% 12%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 0 0% 8%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 195 100% 50%;
-    --accent-foreground: 217 28% 7%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 28% 18%;
-    --input: 217 28% 15%;
-    --ring: 195 100% 50%;
+    --border: 0 0% 15%;
+    --input: 0 0% 10%;
+    --ring: 0 0% 80%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     /* Custom design tokens */
-    --glow: 195 100% 50%;
-    --glass-bg: 217 28% 12%;
-    --glass-border: 217 28% 20%;
+    --glow: 0 0% 100%;
+    --glass-bg: 0 0% 5%;
+    --glass-border: 0 0% 20%;
     
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(195, 100%, 50%) 0%, hsl(195, 100%, 40%) 100%);
-    --gradient-dark: linear-gradient(180deg, hsl(217, 28%, 7%) 0%, hsl(217, 28%, 10%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(0, 0%, 15%) 0%, hsl(0, 0%, 5%) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(0, 0%, 0%) 0%, hsl(0, 0%, 3%) 100%);
     
     /* Shadows */
-    --shadow-glow: 0 0 40px hsl(195 100% 50% / 0.3);
-    --shadow-glow-strong: 0 0 60px hsl(195 100% 50% / 0.5);
+    --shadow-glow: 0 0 40px hsl(0 0% 100% / 0.1);
+    --shadow-glow-strong: 0 0 60px hsl(0 0% 100% / 0.15);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
