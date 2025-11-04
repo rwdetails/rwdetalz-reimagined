@@ -109,25 +109,123 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
             </div>
           </a>
 
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-6">
             <button onClick={() => scrollToSection("home")} className={navButtonClass("home")}>
               Home
             </button>
             <button onClick={() => scrollToSection("services")} className={navButtonClass("services")}>
               Services
             </button>
+            <button onClick={() => scrollToSection("why")} className={navButtonClass("why")}>
+              Why Us
+            </button>
             <button onClick={() => scrollToSection("about")} className={navButtonClass("about")}>
               About
+            </button>
+            <button onClick={() => scrollToSection("reviews-gallery", "reviews")} className={navButtonClass("reviews")}>
+              Reviews
+            </button>
+            <button onClick={() => scrollToSection("reviews-gallery", "gallery")} className={navButtonClass("gallery")}>
+              Gallery
+            </button>
+            <button onClick={() => scrollToSection("track")} className={navButtonClass("track")}>
+              Track
             </button>
             <button onClick={() => scrollToSection("contact")} className={navButtonClass("contact")}>
               Contact
             </button>
-          </div>
-
-          <div className="hidden md:flex items-center gap-3">
             <Button variant="glow" size="sm" onClick={handleBookNow}>
               Book Now
             </Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <User className="w-4 h-4 mr-2" />
+                    Account
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate("/profile")}>
+                    <User className="w-4 h-4 mr-2" />
+                    My Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleLogin}>
+                <LogIn className="w-4 h-4 mr-2" />
+                Login
+              </Button>
+            )}
+          </div>
+
+          <div className="hidden md:flex lg:hidden items-center gap-4">
+            <button onClick={() => scrollToSection("home")} className={navButtonClass("home")}>
+              Home
+            </button>
+            <button onClick={() => scrollToSection("services")} className={navButtonClass("services")}>
+              Services
+            </button>
+            <button onClick={() => scrollToSection("why")} className={navButtonClass("why")}>
+              Why Us
+            </button>
+            <button onClick={() => scrollToSection("about")} className={navButtonClass("about")}>
+              About
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-1">
+                  More <ChevronRight className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => scrollToSection("reviews-gallery", "reviews")}>
+                  Reviews
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => scrollToSection("reviews-gallery", "gallery")}>
+                  Gallery
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => scrollToSection("track")}>
+                  Track
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => scrollToSection("contact")}>
+                  Contact
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="glow" size="sm" onClick={handleBookNow}>
+              Book Now
+            </Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <User className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate("/profile")}>
+                    <User className="w-4 h-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleLogin}>
+                <LogIn className="w-4 h-4" />
+              </Button>
+            )}
           </div>
 
           <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden text-foreground">
@@ -143,8 +241,20 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
             <button onClick={() => scrollToSection("services")} className={`${navButtonClass("services")} text-left`}>
               Services
             </button>
+            <button onClick={() => scrollToSection("why")} className={`${navButtonClass("why")} text-left`}>
+              Why Us
+            </button>
             <button onClick={() => scrollToSection("about")} className={`${navButtonClass("about")} text-left`}>
               About
+            </button>
+            <button onClick={() => scrollToSection("reviews-gallery", "reviews")} className={`${navButtonClass("reviews")} text-left`}>
+              Reviews
+            </button>
+            <button onClick={() => scrollToSection("reviews-gallery", "gallery")} className={`${navButtonClass("gallery")} text-left`}>
+              Gallery
+            </button>
+            <button onClick={() => scrollToSection("track")} className={`${navButtonClass("track")} text-left`}>
+              Track
             </button>
             <button onClick={() => scrollToSection("contact")} className={`${navButtonClass("contact")} text-left`}>
               Contact
@@ -152,6 +262,31 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
             <Button variant="glow" size="sm" onClick={handleBookNow} className="w-full">
               Book Now
             </Button>
+            {user ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigate("/profile");
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  My Profile
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleLogout} className="w-full">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleLogin} className="w-full">
+                <LogIn className="w-4 h-4 mr-2" />
+                Login
+              </Button>
+            )}
           </div>
         )}
       </nav>
