@@ -46,20 +46,20 @@ const WorldwideUsers = () => {
             </p>
             <div className="grid grid-cols-2 gap-6 pt-8">
               <div className="space-y-2 animate-bounce-in" style={{ animationDelay: '0.1s' }}>
-                <div className="text-4xl font-bold glow-text">10K+</div>
-                <div className="text-sm text-muted-foreground">Happy Customers</div>
+                <div className="text-4xl font-bold glow-text">Growing</div>
+                <div className="text-sm text-muted-foreground">Customer Base</div>
               </div>
               <div className="space-y-2 animate-bounce-in" style={{ animationDelay: '0.2s' }}>
-                <div className="text-4xl font-bold glow-text">50+</div>
-                <div className="text-sm text-muted-foreground">Cities Served</div>
+                <div className="text-4xl font-bold glow-text">100%</div>
+                <div className="text-sm text-muted-foreground">Satisfaction Goal</div>
               </div>
               <div className="space-y-2 animate-bounce-in" style={{ animationDelay: '0.3s' }}>
-                <div className="text-4xl font-bold glow-text">99%</div>
-                <div className="text-sm text-muted-foreground">Satisfaction Rate</div>
-              </div>
-              <div className="space-y-2 animate-bounce-in" style={{ animationDelay: '0.4s' }}>
                 <div className="text-4xl font-bold glow-text">24/7</div>
                 <div className="text-sm text-muted-foreground">Support Available</div>
+              </div>
+              <div className="space-y-2 animate-bounce-in" style={{ animationDelay: '0.4s' }}>
+                <div className="text-4xl font-bold glow-text">Local</div>
+                <div className="text-sm text-muted-foreground">Broward Service</div>
               </div>
             </div>
           </div>

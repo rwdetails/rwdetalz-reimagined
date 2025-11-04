@@ -8,32 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
 import { toast } from "sonner";
 
-const testimonials = [
-  {
-    name: "Sarah Johnson",
-    rating: 5,
-    text: "RWDetailz transformed my driveway! It looks brand new. The team was professional, on time, and did an incredible job. Highly recommend!",
-    service: "Driveway Cleaning",
-  },
-  {
-    name: "Mike Rodriguez",
-    rating: 5,
-    text: "Best pressure washing service in Broward! They cleaned our roof and it's like a different house. The young entrepreneurs running this are top-notch.",
-    service: "Roof Cleaning",
-  },
-  {
-    name: "Linda Chen",
-    rating: 5,
-    text: "Finally found someone reliable for trash can cleaning. No more awful smells! They come monthly and do a fantastic job every single time.",
-    service: "Trash Can Cleaning",
-  },
-  {
-    name: "David Martinez",
-    rating: 5,
-    text: "Quick response, fair pricing, and amazing results. My sidewalk and patio look incredible. Will definitely use RWDetailz again!",
-    service: "Pressure Washing",
-  },
-];
+const testimonials: Array<{
+  name: string;
+  rating: number;
+  text: string;
+  service: string;
+}> = [];
 
 const Reviews = () => {
   const [reviewForm, setReviewForm] = useState({
@@ -137,29 +117,31 @@ const Reviews = () => {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          {testimonials.map((testimonial, index) => (
-            <Card key={index} className="glass-card p-6 hover-lift">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary flex-shrink-0">
-                  {testimonial.name.charAt(0)}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold">{testimonial.name}</h3>
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: testimonial.rating }).map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-primary text-primary" />
-                      ))}
-                    </div>
+        {testimonials.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="glass-card p-6 hover-lift">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary flex-shrink-0">
+                    {testimonial.name.charAt(0)}
                   </div>
-                  <p className="text-sm text-muted-foreground mb-3">{testimonial.service}</p>
-                  <p className="text-sm leading-relaxed">{testimonial.text}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-bold">{testimonial.name}</h3>
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: testimonial.rating }).map((_, i) => (
+                          <Star key={i} className="w-4 h-4 fill-primary text-primary" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">{testimonial.service}</p>
+                    <p className="text-sm leading-relaxed">{testimonial.text}</p>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        )}
 
         <div className="glass-card rounded-xl p-8 text-center">
           <h3 className="text-2xl font-bold mb-4">Find Us on Google</h3>
