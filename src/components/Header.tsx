@@ -22,6 +22,7 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
   const [user, setUser] = useState<any>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -33,6 +34,15 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
@@ -99,7 +109,9 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50">
+    <header className={`fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50 transition-all duration-300 ${
+      isScrolled ? "mx-4 mt-4 rounded-2xl" : ""
+    }`}>
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <a href="/" className="flex items-center gap-3" aria-label="Go to homepage">
