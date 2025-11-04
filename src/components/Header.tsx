@@ -103,7 +103,7 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
   };
 
   const navButtonClass = (section: string) => {
-    return `text-foreground hover:text-primary transition-colors ${
+    return `text-foreground hover:text-primary transition-all duration-300 hover:scale-110 hover:-translate-y-0.5 ${
       isActive(section) ? "text-primary font-semibold" : ""
     }`;
   };
