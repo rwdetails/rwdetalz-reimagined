@@ -28,9 +28,9 @@ const services = [
   {
     icon: Car,
     title: "Vehicle Wash & Detailing",
-    price: "Coming Soon",
+    price: "$89.99",
     features: ["Hand wash", "Tire shine", "Wax finish", "Interior detail"],
-    comingSoon: true,
+    isNew: true,
   },
   {
     icon: Fence,
@@ -80,8 +80,13 @@ const Services = () => {
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="mb-4">
-                  <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center mb-4 glow-border">
+                  <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center mb-4 glow-border relative">
                     <Icon className="w-7 h-7 text-primary" />
+                    {service.isNew && (
+                      <div className="absolute -top-2 -right-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-xs font-bold px-2 py-1 rounded-full shadow-lg animate-pulse">
+                        NEW!
+                      </div>
+                    )}
                   </div>
                   <h3 className="text-xl font-bold mb-2">{service.title}</h3>
                   <p className="text-2xl font-bold text-primary mb-4">{service.price}</p>

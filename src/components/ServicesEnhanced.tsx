@@ -30,6 +30,15 @@ const activeServices = [
     description: "Keep your trash cans fresh and sanitary with our specialized cleaning service. We eliminate bacteria, odors, and buildup.",
   },
   {
+    icon: Car,
+    title: "Vehicle Detailing",
+    price: "$89.99",
+    image: "🚗",
+    features: ["Hand wash", "Interior detail", "Wax & polish", "Tire shine"],
+    description: "Complete vehicle detailing service. Choose from basic wash to premium packages with clay bar treatment, ceramic coating, and more.",
+    isNew: true,
+  },
+  {
     icon: Home,
     title: "Roof Cleaning",
     price: "$200",
@@ -46,13 +55,6 @@ const comingSoonServices = [
     price: "Coming Soon",
     image: "🪵",
     features: ["Wood restoration", "Stain prep", "Mildew removal", "Sealing available"],
-  },
-  {
-    icon: Car,
-    title: "Vehicle Detailing",
-    price: "Coming Soon",
-    image: "🚙",
-    features: ["Hand wash", "Interior detail", "Wax & polish", "Tire shine"],
   },
   {
     icon: Paintbrush,
@@ -118,9 +120,14 @@ const ServicesEnhanced = () => {
                   onOpenChange={(open) => setExpandedService(open ? service.title : null)}
                 >
                   <div className="glass-card rounded-xl p-6 hover-lift h-full flex flex-col">
-                    <div className="mb-4">
-                      <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center mb-4 glow-border text-3xl">
+                  <div className="mb-4">
+                      <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center mb-4 glow-border text-3xl relative">
                         {service.image}
+                        {service.isNew && (
+                          <div className="absolute -top-2 -right-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-xs font-bold px-2 py-1 rounded-full shadow-lg animate-pulse">
+                            NEW!
+                          </div>
+                        )}
                       </div>
                       <h3 className="text-xl font-bold mb-2">{service.title}</h3>
                       <p className="text-2xl font-bold text-primary mb-4">{service.price}</p>

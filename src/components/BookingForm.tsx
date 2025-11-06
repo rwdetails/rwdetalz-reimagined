@@ -19,7 +19,25 @@ const services = [
   { id: "driveway", name: "Driveway Cleaning", price: 120, image: "🚗" },
   { id: "trash-can", name: "Trash Can Cleaning", price: 50, image: "🗑️" },
   { id: "roof", name: "Roof Cleaning", price: 200, image: "🏚️" },
+  { 
+    id: "vehicle-detailing", 
+    name: "Vehicle Detailing", 
+    price: 89.99, 
+    image: "🚙",
+    isNew: true,
+    addons: [
+      { id: "clay-bar", name: "Clay Bar Treatment", price: 25 },
+      { id: "ceramic-coating", name: "Ceramic Coating", price: 150 },
+      { id: "engine-bay", name: "Engine Bay Detail", price: 40 },
+      { id: "headlight-restore", name: "Headlight Restoration", price: 35 },
+      { id: "pet-hair", name: "Pet Hair Removal", price: 30 },
+    ]
+  },
 ];
+
+interface DetailingAddons {
+  [key: string]: string[];
+}
 
 interface BookingFormProps {
   onClose: () => void;
@@ -45,6 +63,7 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
     source: "",
     paymentMethod: "",
   });
+  const [detailingAddons, setDetailingAddons] = useState<DetailingAddons>({});
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -86,11 +105,36 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
     }));
   };
 
+  const handleAddonToggle = (serviceId: string, addonId: string) => {
+    setDetailingAddons((prev) => {
+      const serviceAddons = prev[serviceId] || [];
+      return {
+        ...prev,
+        [serviceId]: serviceAddons.includes(addonId)
+          ? serviceAddons.filter((id) => id !== addonId)
+          : [...serviceAddons, addonId],
+      };
+    });
+  };
+
   const calculateTotal = () => {
-    return formData.services.reduce((total, serviceId) => {
+    let total = formData.services.reduce((sum, serviceId) => {
       const service = services.find((s) => s.id === serviceId);
-      return total + (service?.price || 0);
+      return sum + (service?.price || 0);
     }, 0);
+
+    // Add addon prices
+    Object.entries(detailingAddons).forEach(([serviceId, addonIds]) => {
+      const service = services.find((s) => s.id === serviceId);
+      if (service?.addons) {
+        addonIds.forEach((addonId) => {
+          const addon = service.addons.find((a: any) => a.id === addonId);
+          if (addon) total += addon.price;
+        });
+      }
+    });
+
+    return total;
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,24 +318,54 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
             <h3 className="text-2xl font-bold glow-text">Select Services</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {services.map((service) => (
-                <div
-                  key={service.id}
-                  onClick={() => handleServiceToggle(service.id)}
-                  className={cn(
-                    "glass-card p-4 rounded-lg cursor-pointer transition-all hover-lift",
-                    formData.services.includes(service.id) && "ring-2 ring-primary bg-primary/10"
-                  )}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3">
-                      <div className="text-3xl">{service.image}</div>
-                      <div>
-                        <h4 className="font-bold">{service.name}</h4>
-                        <p className="text-primary font-semibold">${service.price}</p>
+                <div key={service.id} className="space-y-2">
+                  <div
+                    onClick={() => handleServiceToggle(service.id)}
+                    className={cn(
+                      "glass-card p-4 rounded-lg cursor-pointer transition-all hover-lift",
+                      formData.services.includes(service.id) && "ring-2 ring-primary bg-primary/10"
+                    )}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl relative">
+                          {service.image}
+                          {service.isNew && (
+                            <div className="absolute -top-1 -right-1 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-[8px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                              NEW
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="font-bold">{service.name}</h4>
+                          <p className="text-primary font-semibold">${service.price}</p>
+                        </div>
                       </div>
+                      <Checkbox checked={formData.services.includes(service.id)} />
                     </div>
-                    <Checkbox checked={formData.services.includes(service.id)} />
                   </div>
+                  
+                  {service.addons && formData.services.includes(service.id) && (
+                    <div className="ml-4 glass-card p-3 rounded-lg space-y-2 animate-fade-in">
+                      <p className="text-sm font-semibold text-muted-foreground">Add-ons:</p>
+                      {service.addons.map((addon: any) => (
+                        <div
+                          key={addon.id}
+                          onClick={() => handleAddonToggle(service.id, addon.id)}
+                          className={cn(
+                            "flex items-center justify-between p-2 rounded cursor-pointer hover:bg-primary/5 transition-colors",
+                            detailingAddons[service.id]?.includes(addon.id) && "bg-primary/10"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Checkbox checked={detailingAddons[service.id]?.includes(addon.id)} />
+                            <span className="text-sm">{addon.name}</span>
+                          </div>
+                          <span className="text-sm font-semibold text-primary">+${addon.price}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
