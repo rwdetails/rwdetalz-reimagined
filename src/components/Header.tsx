@@ -115,7 +115,6 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <a href="/" className="flex items-center gap-3" aria-label="Go to homepage">
-            <img src="/logo.png" alt="RWDetailz logo" className="h-10 w-10" />
             <div className="text-2xl font-bold glow-text">
               RW<span className="text-primary">Detailz</span>
             </div>

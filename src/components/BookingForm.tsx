@@ -15,7 +15,19 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const services = [
-  { id: "pressure-washing", name: "Pressure Washing", price: 150, image: "🏠" },
+  { 
+    id: "pressure-washing", 
+    name: "Pressure Washing", 
+    price: 150, 
+    image: "🏠",
+    addons: [
+      { id: "house-exterior", name: "House Exterior", price: 0 },
+      { id: "driveway", name: "Driveway", price: 0 },
+      { id: "deck-patio", name: "Deck/Patio", price: 0 },
+      { id: "fence", name: "Fence", price: 0 },
+      { id: "walkway", name: "Walkway", price: 0 },
+    ]
+  },
   { id: "driveway", name: "Driveway Cleaning", price: 120, image: "🚗" },
   { id: "trash-can", name: "Trash Can Cleaning", price: 50, image: "🗑️" },
   { id: "roof", name: "Roof Cleaning", price: 200, image: "🏚️" },
@@ -35,8 +47,12 @@ const services = [
   },
 ];
 
-interface DetailingAddons {
+interface ServiceAddons {
   [key: string]: string[];
+}
+
+interface CustomOptions {
+  [key: string]: string;
 }
 
 interface BookingFormProps {
@@ -63,7 +79,8 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
     source: "",
     paymentMethod: "",
   });
-  const [detailingAddons, setDetailingAddons] = useState<DetailingAddons>({});
+  const [serviceAddons, setServiceAddons] = useState<ServiceAddons>({});
+  const [customOptions, setCustomOptions] = useState<CustomOptions>({});
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -106,13 +123,13 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
   };
 
   const handleAddonToggle = (serviceId: string, addonId: string) => {
-    setDetailingAddons((prev) => {
-      const serviceAddons = prev[serviceId] || [];
+    setServiceAddons((prev) => {
+      const addons = prev[serviceId] || [];
       return {
         ...prev,
-        [serviceId]: serviceAddons.includes(addonId)
-          ? serviceAddons.filter((id) => id !== addonId)
-          : [...serviceAddons, addonId],
+        [serviceId]: addons.includes(addonId)
+          ? addons.filter((id) => id !== addonId)
+          : [...addons, addonId],
       };
     });
   };
@@ -124,7 +141,7 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
     }, 0);
 
     // Add addon prices
-    Object.entries(detailingAddons).forEach(([serviceId, addonIds]) => {
+    Object.entries(serviceAddons).forEach(([serviceId, addonIds]) => {
       const service = services.find((s) => s.id === serviceId);
       if (service?.addons) {
         addonIds.forEach((addonId) => {
@@ -347,23 +364,39 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
                   
                   {service.addons && formData.services.includes(service.id) && (
                     <div className="ml-4 glass-card p-3 rounded-lg space-y-2 animate-fade-in">
-                      <p className="text-sm font-semibold text-muted-foreground">Add-ons:</p>
+                      <p className="text-sm font-semibold text-muted-foreground">
+                        {service.id === "pressure-washing" ? "What needs to be washed:" : "Add-ons:"}
+                      </p>
                       {service.addons.map((addon: any) => (
                         <div
                           key={addon.id}
                           onClick={() => handleAddonToggle(service.id, addon.id)}
                           className={cn(
                             "flex items-center justify-between p-2 rounded cursor-pointer hover:bg-primary/5 transition-colors",
-                            detailingAddons[service.id]?.includes(addon.id) && "bg-primary/10"
+                            serviceAddons[service.id]?.includes(addon.id) && "bg-primary/10"
                           )}
                         >
                           <div className="flex items-center gap-2">
-                            <Checkbox checked={detailingAddons[service.id]?.includes(addon.id)} />
+                            <Checkbox checked={serviceAddons[service.id]?.includes(addon.id)} />
                             <span className="text-sm">{addon.name}</span>
                           </div>
-                          <span className="text-sm font-semibold text-primary">+${addon.price}</span>
+                          {addon.price > 0 && (
+                            <span className="text-sm font-semibold text-primary">+${addon.price}</span>
+                          )}
                         </div>
                       ))}
+                      {service.id === "pressure-washing" && (
+                        <div className="pt-2">
+                          <Label htmlFor={`custom-${service.id}`} className="text-xs">Custom Options</Label>
+                          <Input
+                            id={`custom-${service.id}`}
+                            placeholder="e.g., Pool area, Garage door..."
+                            value={customOptions[service.id] || ""}
+                            onChange={(e) => setCustomOptions({ ...customOptions, [service.id]: e.target.value })}
+                            className="mt-1 text-sm"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
