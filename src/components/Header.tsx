@@ -59,7 +59,7 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
       }
     );
 
-    const sections = ["home", "services", "why", "about", "reviews-gallery", "track", "contact"];
+    const sections = ["home", "services", "why", "about", "reviews-gallery", "track", "quote"];
     sections.forEach((id) => {
       const element = document.getElementById(id);
       if (element) observer.observe(element);
@@ -142,8 +142,8 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
             <button onClick={() => scrollToSection("track")} className={navButtonClass("track")}>
               Track
             </button>
-            <button onClick={() => scrollToSection("contact")} className={navButtonClass("contact")}>
-              Contact
+            <button onClick={() => scrollToSection("quote")} className={navButtonClass("quote")}>
+              Get Quote
             </button>
             <Button variant="glow" size="sm" onClick={handleBookNow}>
               Book Now
@@ -205,8 +205,8 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
                 <DropdownMenuItem onClick={() => scrollToSection("track")}>
                   Track
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => scrollToSection("contact")}>
-                  Contact
+                <DropdownMenuItem onClick={() => scrollToSection("quote")}>
+                  Get Quote
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -267,8 +267,8 @@ const Header = ({ onBookNowClick, onTabChange }: HeaderProps) => {
             <button onClick={() => scrollToSection("track")} className={`${navButtonClass("track")} text-left`}>
               Track
             </button>
-            <button onClick={() => scrollToSection("contact")} className={`${navButtonClass("contact")} text-left`}>
-              Contact
+            <button onClick={() => scrollToSection("quote")} className={`${navButtonClass("quote")} text-left`}>
+              Get Quote
             </button>
             <Button variant="glow" size="sm" onClick={handleBookNow} className="w-full">
               Book Now
