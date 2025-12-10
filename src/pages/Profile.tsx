@@ -51,7 +51,7 @@ export default function Profile() {
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
   const [allProfilesLoading, setAllProfilesLoading] = useState(false);
   const [banning, setBanning] = useState<Record<string, boolean>>({});
-  const isOwner = (user?.email || "").toLowerCase() === "rwdetailz@gmail.com";
+  const [isOwner, setIsOwner] = useState(false);
 
   // Owner panel filtering
   const [ownerFilterText, setOwnerFilterText] = useState("");
@@ -79,6 +79,18 @@ export default function Profile() {
     writeOverrides(o as any);
   };
 
+  const checkAdminRole = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!error && data) {
+      setIsOwner(true);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
@@ -87,6 +99,7 @@ export default function Profile() {
         setUser(session.user);
         loadProfile(session.user.id);
         loadBookings(session.user.id);
+        checkAdminRole(session.user.id);
       }
     });
   }, [navigate]);
