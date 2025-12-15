@@ -20,6 +20,7 @@ const services = [
     name: "Pressure Washing", 
     price: 150, 
     image: "🏠",
+    isQuote: true,
     addons: [
       { id: "house-exterior", name: "House Exterior", price: 0 },
       { id: "driveway", name: "Driveway", price: 0 },
@@ -28,15 +29,17 @@ const services = [
       { id: "walkway", name: "Walkway", price: 0 },
     ]
   },
-  { id: "driveway", name: "Driveway Cleaning", price: 120, image: "🚗" },
-  { id: "trash-can", name: "Trash Can Cleaning", price: 50, image: "🗑️" },
-  { id: "roof", name: "Roof Cleaning", price: 200, image: "🏚️" },
+  { id: "driveway", name: "Driveway Cleaning", price: 120, image: "🚗", isQuote: true },
+  { id: "trash-can", name: "Trash Can Cleaning", price: 50, image: "🗑️", isQuote: false },
+  { id: "roof", name: "Roof Cleaning", price: 200, image: "🏚️", isQuote: true },
+  { id: "gutter", name: "Gutter Cleaning", price: 75, image: "🏠", isQuote: false },
   { 
     id: "vehicle-detailing", 
     name: "Vehicle Detailing", 
     price: 89.99, 
     image: "🚙",
     isNew: true,
+    isQuote: true,
     addons: [
       { id: "clay-bar", name: "Clay Bar Treatment", price: 25 },
       { id: "ceramic-coating", name: "Ceramic Coating", price: 150 },
@@ -66,6 +69,7 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
   const [bookingId, setBookingId] = useState("");
   const [user, setUser] = useState<any>(null);
   const [images, setImages] = useState<File[]>([]);
+  const [testingMode] = useState(() => localStorage.getItem("owner_testing_mode") === "true");
   const [uploadingImages, setUploadingImages] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -156,12 +160,23 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (images.length + files.length > 5) {
-      toast.error("Maximum 5 images allowed");
+    const maxImages = testingMode ? 20 : 5;
+    if (images.length + files.length > maxImages) {
+      toast.error(`Maximum ${maxImages} images allowed`);
       return;
     }
     setImages([...images, ...files]);
   };
+
+  // Check if any selected service is a quote-based service
+  const hasQuoteServices = formData.services.some(serviceId => {
+    const service = services.find(s => s.id === serviceId);
+    return service?.isQuote;
+  });
+
+  // Determine if this is a booking or quote request
+  const isQuoteRequest = hasQuoteServices;
+  const formType = isQuoteRequest ? "Quote" : "Booking";
 
   const removeImage = (index: number) => {
     setImages(images.filter((_, i) => i !== index));
@@ -429,9 +444,10 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
             
             <div className="space-y-4">
               <div>
-                <Label>Upload Images (Required - Max 5) *</Label>
+                <Label>Upload Images {testingMode ? "(Testing Mode - Optional)" : "(Required - Max 5)"} {!testingMode && "*"}</Label>
                 <p className="text-sm text-muted-foreground mb-2">
                   Please upload photos of areas to be cleaned
+                  {testingMode && <span className="ml-2 text-primary font-semibold">(Testing Mode Active)</span>}
                 </p>
                 <div className="space-y-3">
                   <label htmlFor="image-upload" className="cursor-pointer">
@@ -570,7 +586,7 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
               </Button>
               <Button
                 onClick={() => setStep(4)}
-                disabled={!formData.date || !formData.time || !formData.source || images.length === 0}
+                disabled={!formData.date || !formData.time || !formData.source || (!testingMode && images.length === 0)}
                 variant="glow"
                 className="flex-1"
               >
@@ -719,10 +735,16 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
         <div className="flex items-center justify-between mb-12">
           <div className="flex-1">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Book Your <span className="glow-text">Service</span>
+              {isQuoteRequest ? (
+                <>Request a <span className="glow-text">Quote</span></>
+              ) : (
+                <>Book Your <span className="glow-text">Service</span></>
+              )}
             </h2>
             <p className="text-muted-foreground text-lg">
-              Complete your booking in just a few steps
+              {isQuoteRequest 
+                ? "Get a free quote in just a few steps" 
+                : "Complete your booking in just a few steps"}
             </p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="flex-shrink-0">

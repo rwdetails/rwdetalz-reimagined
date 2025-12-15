@@ -112,14 +112,28 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Received booking request:", bookingData);
 
     const servicesHtml = bookingData.services.map(service => `<li style="color:#374151; margin:5px 0;">${service}</li>`).join("");
-    const imagesHtml = bookingData.imageUrls && bookingData.imageUrls.length > 0
-      ? `<div style="margin-top: 20px;">
-          <p style="color:#374151; font-weight:bold;">Uploaded Images:</p>
-          ${bookingData.imageUrls.map(url => `
-            <img src="${url}" alt="Booking image" style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; margin: 5px;" />
-          `).join('')}
-        </div>`
-      : '';
+    
+    // Generate images HTML with proper inline embedding for email clients
+    let imagesHtml = '';
+    if (bookingData.imageUrls && bookingData.imageUrls.length > 0) {
+      const imageItems = bookingData.imageUrls.map((url, index) => `
+        <tr>
+          <td style="padding: 5px;">
+            <a href="${url}" target="_blank" style="color:#2563eb; text-decoration:underline;">View Image ${index + 1}</a>
+          </td>
+        </tr>
+      `).join('');
+      
+      imagesHtml = `
+        <div style="margin-top: 20px; background:#f0f9ff; padding:15px; border-radius:8px; border-left:4px solid #2563eb;">
+          <p style="color:#374151; font-weight:bold; margin:0 0 10px 0;">📷 Uploaded Images (${bookingData.imageUrls.length}):</p>
+          <table cellpadding="0" cellspacing="0">
+            ${imageItems}
+          </table>
+          <p style="color:#6b7280; font-size:12px; margin:10px 0 0 0;">Click links above to view full-size images</p>
+        </div>
+      `;
+    }
 
     const detailsContent = `
       <div style="background:#f9fafb; padding:20px; border-radius:8px; margin:20px 0;">
