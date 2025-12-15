@@ -20,6 +20,88 @@ interface BookingRequest {
   imageUrls?: string[];
 }
 
+const emailTemplate = (title: string, customerName: string, message: string, ctaLink: string, ctaText: string, extraContent: string = "") => `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RW Detailz</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f4; font-family:Arial, Helvetica, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f4; padding:20px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden;">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background:#111827; padding:20px; text-align:center;">
+              <h1 style="color:#ffffff; margin:0; font-size:24px;">
+                RW Detailz
+              </h1>
+              <p style="color:#9ca3af; margin:5px 0 0; font-size:14px;">
+                Premium Auto Detailing
+              </p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:30px;">
+              <h2 style="color:#111827; margin-top:0;">
+                ${title}
+              </h2>
+
+              <p style="color:#374151; font-size:16px; line-height:1.5;">
+                Hi ${customerName},
+              </p>
+
+              <p style="color:#374151; font-size:16px; line-height:1.5;">
+                ${message}
+              </p>
+
+              ${extraContent}
+
+              <!-- CTA Button -->
+              <table cellpadding="0" cellspacing="0" style="margin:30px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${ctaLink}" 
+                       style="background:#2563eb; color:#ffffff; text-decoration:none; padding:14px 24px; border-radius:6px; font-weight:bold; display:inline-block;">
+                      ${ctaText}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="color:#6b7280; font-size:14px;">
+                If you have any questions, just reply to this email or call us at (954) 865-6205 — we're happy to help.
+              </p>
+
+              <p style="color:#374151; font-size:16px;">
+                — RW Detailz Team
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f9fafb; padding:20px; text-align:center;">
+              <p style="color:#9ca3af; font-size:12px; margin:0;">
+                © 2025 RWDetailz.com • All rights reserved
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -29,39 +111,41 @@ const handler = async (req: Request): Promise<Response> => {
     const bookingData: BookingRequest = await req.json();
     console.log("Received booking request:", bookingData);
 
-    const servicesHtml = bookingData.services.map(service => `<li>${service}</li>`).join("");
+    const servicesHtml = bookingData.services.map(service => `<li style="color:#374151; margin:5px 0;">${service}</li>`).join("");
     const imagesHtml = bookingData.imageUrls && bookingData.imageUrls.length > 0
       ? `<div style="margin-top: 20px;">
-          <p><strong>Uploaded Images:</strong></p>
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
-            ${bookingData.imageUrls.map(url => `
-              <div>
-                <img src="${url}" alt="Booking image" style="width: 100%; max-width: 200px; height: auto; border-radius: 8px;" />
-              </div>
-            `).join('')}
-          </div>
+          <p style="color:#374151; font-weight:bold;">Uploaded Images:</p>
+          ${bookingData.imageUrls.map(url => `
+            <img src="${url}" alt="Booking image" style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; margin: 5px;" />
+          `).join('')}
         </div>`
       : '';
+
+    const detailsContent = `
+      <div style="background:#f9fafb; padding:20px; border-radius:8px; margin:20px 0;">
+        <p style="color:#374151; margin:5px 0;"><strong>Date:</strong> ${bookingData.date}</p>
+        <p style="color:#374151; margin:5px 0;"><strong>Time:</strong> ${bookingData.time}</p>
+        <p style="color:#374151; margin:5px 0;"><strong>Address:</strong> ${bookingData.address}</p>
+        <p style="color:#374151; margin:10px 0 5px;"><strong>Services:</strong></p>
+        <ul style="margin:0; padding-left:20px;">${servicesHtml}</ul>
+        ${bookingData.details ? `<p style="color:#374151; margin:10px 0 5px;"><strong>Additional Details:</strong> ${bookingData.details}</p>` : ''}
+      </div>
+      ${imagesHtml}
+    `;
 
     // Send email to business
     const businessEmail = await resend.emails.send({
       from: "RWDetailz Booking <onboarding@resend.dev>",
       to: ["rwdetailz@gmail.com"],
       subject: `New Booking Request from ${bookingData.name}`,
-      html: `
-        <h2>New Booking Request</h2>
-        <p><strong>Name:</strong> ${bookingData.name}</p>
-        <p><strong>Email:</strong> ${bookingData.email}</p>
-        <p><strong>Phone:</strong> ${bookingData.phone}</p>
-        <p><strong>Address:</strong> ${bookingData.address}</p>
-        <p><strong>Date:</strong> ${bookingData.date}</p>
-        <p><strong>Time:</strong> ${bookingData.time}</p>
-        <p><strong>Services Requested:</strong></p>
-        <ul>${servicesHtml}</ul>
-        <p><strong>Additional Details:</strong></p>
-        <p>${bookingData.details || "None provided"}</p>
-        ${imagesHtml}
-      `,
+      html: emailTemplate(
+        "New Booking Request",
+        "Team",
+        `You have a new booking request from <strong>${bookingData.name}</strong> (${bookingData.email}, ${bookingData.phone}).`,
+        "https://rwdetailz.com",
+        "View Dashboard",
+        detailsContent
+      ),
     });
 
     // Send confirmation email to customer
@@ -69,21 +153,14 @@ const handler = async (req: Request): Promise<Response> => {
       from: "RWDetailz <onboarding@resend.dev>",
       to: [bookingData.email],
       subject: "Booking Confirmation - RWDetailz",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #00B0FF;">Thanks for choosing RWDetailz!</h1>
-          <p>Hi ${bookingData.name},</p>
-          <p>We've received your booking request and will contact you soon to confirm.</p>
-          <h3>Booking Details:</h3>
-          <p><strong>Date:</strong> ${bookingData.date}</p>
-          <p><strong>Time:</strong> ${bookingData.time}</p>
-          <p><strong>Address:</strong> ${bookingData.address}</p>
-          <p><strong>Services:</strong></p>
-          <ul>${servicesHtml}</ul>
-          <p>If you have any questions, call us at (954) 865-6205</p>
-          <p style="margin-top: 30px;">Best regards,<br><strong>Rakeem & Wood</strong><br>RWDetailz Team</p>
-        </div>
-      `,
+      html: emailTemplate(
+        "Thanks for Your Booking!",
+        bookingData.name,
+        "We've received your booking request and will contact you soon to confirm the details.",
+        "https://rwdetailz.com",
+        "View Our Services",
+        detailsContent
+      ),
     });
 
     console.log("Emails sent successfully:", { businessEmail, customerEmail });
