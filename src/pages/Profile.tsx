@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, ArrowLeft, Package, Clock, CheckCircle2, XCircle, Edit, Mail, Phone, MapPin, User as UserIcon, Share2, StopCircle, Filter } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { LogOut, ArrowLeft, Package, Clock, CheckCircle2, XCircle, Edit, Mail, Phone, MapPin, User as UserIcon, Share2, StopCircle, Filter, FlaskConical } from "lucide-react";
 import OwnerAIChat from "@/components/OwnerAIChat";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -52,6 +53,9 @@ export default function Profile() {
   const [allProfilesLoading, setAllProfilesLoading] = useState(false);
   const [banning, setBanning] = useState<Record<string, boolean>>({});
   const [isOwner, setIsOwner] = useState(false);
+  const [testingMode, setTestingMode] = useState(() => {
+    return localStorage.getItem("owner_testing_mode") === "true";
+  });
 
   // Owner panel filtering
   const [ownerFilterText, setOwnerFilterText] = useState("");
@@ -615,6 +619,25 @@ export default function Profile() {
                     <CardDescription>Filter, update status, assign crew, and broadcast your live location to customers.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/* Testing Mode Toggle */}
+                    <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+                      <div className="flex items-center gap-3">
+                        <FlaskConical className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-semibold">Testing Mode</p>
+                          <p className="text-sm text-muted-foreground">Disables photo min/max requirements for bookings</p>
+                        </div>
+                      </div>
+                      <Switch 
+                        checked={testingMode} 
+                        onCheckedChange={(checked) => {
+                          setTestingMode(checked);
+                          localStorage.setItem("owner_testing_mode", checked.toString());
+                          toast.success(checked ? "Testing mode enabled" : "Testing mode disabled");
+                        }} 
+                      />
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div className="md:col-span-2">
                         <Label>Search</Label>
