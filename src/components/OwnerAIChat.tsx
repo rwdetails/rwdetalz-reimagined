@@ -44,6 +44,15 @@ export default function OwnerAIChat({ bookings }: { bookings: BookingLite[] }) {
     return { recent_bookings: recent };
   }, [bookings]);
 
+  const scrollToBottom = () => {
+    if (endRef.current) {
+      const container = endRef.current.parentElement;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+  };
+
   const send = async () => {
     const content = input.trim();
     if (!content) return;
@@ -59,10 +68,10 @@ export default function OwnerAIChat({ bookings }: { bookings: BookingLite[] }) {
       const reply = (data as any)?.content || "";
       setMessages(prev => [...prev, { role: "assistant", content: reply }]);
     } catch (e: any) {
-      toast.error(e?.message || "AI request failed. Add OPENAI_API_KEY to Supabase Function env.");
+      toast.error(e?.message || "AI request failed.");
     } finally {
       setLoading(false);
-      setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      setTimeout(scrollToBottom, 50);
     }
   };
 
