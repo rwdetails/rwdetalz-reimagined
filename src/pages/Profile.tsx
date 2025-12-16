@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { LogOut, ArrowLeft, Package, Clock, CheckCircle2, XCircle, Edit, Mail, Phone, MapPin, User as UserIcon, Share2, StopCircle, Filter, FlaskConical } from "lucide-react";
 import OwnerAIChat from "@/components/OwnerAIChat";
+import DetailerTracker from "@/components/DetailerTracker";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -613,6 +614,10 @@ export default function Profile() {
             {isOwner && (
               <TabsContent value="owner" className="space-y-4 mt-6">
                 <OwnerAIChat bookings={allBookings} />
+                
+                {/* Detailer Location Tracker - for sharing location with customers */}
+                <DetailerTracker />
+                
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Filter className="w-4 h-4"/> Owner Tools</CardTitle>

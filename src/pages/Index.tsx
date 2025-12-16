@@ -5,7 +5,7 @@ import WhyUs from "@/components/WhyUs";
 import About from "@/components/About";
 import Reviews from "@/components/Reviews";
 import Gallery from "@/components/Gallery";
-import BookingTracker from "@/components/BookingTracker";
+import CustomerLiveTracker from "@/components/CustomerLiveTracker";
 import QuoteRequest from "@/components/QuoteRequest";
 import BookingForm from "@/components/BookingForm";
 import Footer from "@/components/Footer";
@@ -56,7 +56,7 @@ const Index = () => {
                 </Tabs>
               </div>
             </section>
-            <BookingTracker />
+            <CustomerLiveTracker />
             <QuoteRequest />
           </>
         )}

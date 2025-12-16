@@ -19,7 +19,13 @@ export type Database = {
           address: string
           booking_number: string
           created_at: string | null
+          customer_lat: number | null
+          customer_lng: number | null
+          detailer_lat: number | null
+          detailer_lng: number | null
+          detailer_updated_at: string | null
           email: string
+          eta_minutes: number | null
           full_name: string
           how_heard: string | null
           id: string
@@ -33,6 +39,7 @@ export type Database = {
           status: string | null
           stripe_payment_id: string | null
           total_amount: number
+          tracking_enabled: boolean | null
           updated_at: string | null
           user_id: string
         }
@@ -40,7 +47,13 @@ export type Database = {
           address: string
           booking_number: string
           created_at?: string | null
+          customer_lat?: number | null
+          customer_lng?: number | null
+          detailer_lat?: number | null
+          detailer_lng?: number | null
+          detailer_updated_at?: string | null
           email: string
+          eta_minutes?: number | null
           full_name: string
           how_heard?: string | null
           id?: string
@@ -54,6 +67,7 @@ export type Database = {
           status?: string | null
           stripe_payment_id?: string | null
           total_amount: number
+          tracking_enabled?: boolean | null
           updated_at?: string | null
           user_id: string
         }
@@ -61,7 +75,13 @@ export type Database = {
           address?: string
           booking_number?: string
           created_at?: string | null
+          customer_lat?: number | null
+          customer_lng?: number | null
+          detailer_lat?: number | null
+          detailer_lng?: number | null
+          detailer_updated_at?: string | null
           email?: string
+          eta_minutes?: number | null
           full_name?: string
           how_heard?: string | null
           id?: string
@@ -75,6 +95,7 @@ export type Database = {
           status?: string | null
           stripe_payment_id?: string | null
           total_amount?: number
+          tracking_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string
         }
