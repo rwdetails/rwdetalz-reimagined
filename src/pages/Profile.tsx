@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { LogOut, ArrowLeft, Package, Clock, CheckCircle2, XCircle, Edit, Mail, Phone, MapPin, User as UserIcon, Share2, StopCircle, Filter, FlaskConical } from "lucide-react";
+import { LogOut, ArrowLeft, Package, Clock, CheckCircle2, XCircle, Edit, Mail, Phone, MapPin, User as UserIcon, Share2, StopCircle, Filter, FlaskConical, Ban, ShieldAlert } from "lucide-react";
 import OwnerAIChat from "@/components/OwnerAIChat";
 import DetailerTracker from "@/components/DetailerTracker";
 import { toast } from "sonner";
@@ -34,6 +34,9 @@ interface Booking {
   full_name: string;
   email: string;
   phone: string;
+  crew_name?: string;
+  eta_minutes?: number;
+  is_quote?: boolean;
 }
 
 export default function Profile() {
@@ -54,6 +57,7 @@ export default function Profile() {
   const [allProfilesLoading, setAllProfilesLoading] = useState(false);
   const [banning, setBanning] = useState<Record<string, boolean>>({});
   const [isOwner, setIsOwner] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
   const [testingMode, setTestingMode] = useState(() => {
     return localStorage.getItem("owner_testing_mode") === "true";
   });
@@ -67,23 +71,6 @@ export default function Profile() {
   const trackingWatchIds = useRef<Record<string, number | null>>({});
   const trackingChannels = useRef<Record<string, ReturnType<typeof supabase.channel> | null>>({});
 
-  const LOCAL_OVERRIDES_KEY = "booking_overrides";
-  const readOverrides = (): Record<string, Partial<Booking & { crew_name?: string; eta_minutes?: number }>> => {
-    try { return JSON.parse(localStorage.getItem(LOCAL_OVERRIDES_KEY) || "{}"); } catch { return {}; }
-  };
-  const writeOverrides = (data: Record<string, Partial<Booking>>) => {
-    localStorage.setItem(LOCAL_OVERRIDES_KEY, JSON.stringify(data));
-  };
-  const applyOverrides = (list: Booking[]) => {
-    const o = readOverrides();
-    return list.map((b) => ({ ...b, ...(o[b.id] || {}) }));
-  };
-  const setOverride = (id: string, patch: Partial<Booking & { crew_name?: string; eta_minutes?: number }>) => {
-    const o = readOverrides();
-    o[id] = { ...(o[id] || {}), ...patch };
-    writeOverrides(o as any);
-  };
-
   const checkAdminRole = async (userId: string) => {
     const { data, error } = await supabase
       .from("user_roles")
@@ -93,6 +80,13 @@ export default function Profile() {
       .maybeSingle();
     if (!error && data) {
       setIsOwner(true);
+    }
+  };
+
+  // Check if user is banned
+  const checkBanStatus = (profileData: any) => {
+    if (profileData?.banned) {
+      setIsBanned(true);
     }
   };
 
@@ -114,7 +108,6 @@ export default function Profile() {
       loadAllBookings();
       loadAllProfiles();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOwner]);
 
   useEffect(() => {
@@ -148,9 +141,18 @@ export default function Profile() {
     const topic = `tracking:${booking.booking_number}`;
     const ch = ensureChannel(booking.booking_number);
     const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
+      async (pos) => {
         const payload = { lat: pos.coords.latitude, lng: pos.coords.longitude, ts: Date.now(), booking: booking.booking_number };
         ch.send({ type: "broadcast", event: "location", payload });
+        
+        // Also update via edge function for persistence
+        await supabase.functions.invoke("update-detailer-location", {
+          body: {
+            booking_number: booking.booking_number,
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          },
+        });
       },
       (err) => {
         console.error("Geolocation error", err);
@@ -177,9 +179,10 @@ export default function Profile() {
 
   const setStatus = async (booking: Booking, status: string) => {
     try {
-      const qb = supabase.from("bookings").update({ status }).eq("id", booking.id);
-      if (!isOwner && user) qb.eq("user_id", user.id);
-      const { error } = await qb;
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status })
+        .eq("id", booking.id);
       if (error) throw error;
       setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status } : b)));
       setAllBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status } : b)));
@@ -190,11 +193,24 @@ export default function Profile() {
     }
   };
 
-  const saveOwnerMeta = (booking: Booking, patch: { crew_name?: string; eta_minutes?: number }) => {
-    setOverride(booking.id, patch as any);
-    setAllBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, ...(patch as any) } : b)));
-    setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, ...(patch as any) } : b)));
-    toast.success("Saved");
+  // FIX: Save crew_name and eta_minutes to DATABASE instead of localStorage
+  const saveOwnerMeta = async (booking: Booking, patch: { crew_name?: string; eta_minutes?: number }) => {
+    try {
+      const { error } = await supabase
+        .from("bookings")
+        .update(patch)
+        .eq("id", booking.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setAllBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, ...patch } : b)));
+      setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, ...patch } : b)));
+      toast.success("Saved to database");
+    } catch (e: any) {
+      console.error("Save owner meta error:", e);
+      toast.error(e.message || "Failed to save");
+    }
   };
 
   const loadProfile = async (userId: string) => {
@@ -204,6 +220,7 @@ export default function Profile() {
     } else {
       setProfile(data);
       setEditForm({ full_name: data.full_name || "", phone: data.phone || "", email: data.email || "" });
+      checkBanStatus(data);
     }
   };
 
@@ -214,7 +231,7 @@ export default function Profile() {
       console.error("Error loading bookings:", error);
       toast.error("Failed to load bookings");
     } else {
-      setBookings(applyOverrides(data || []));
+      setBookings(data || []);
     }
     setLoading(false);
   };
@@ -226,7 +243,7 @@ export default function Profile() {
       console.error("Error loading all bookings:", error);
       toast.error("Failed to load all bookings");
     } else {
-      setAllBookings(applyOverrides(data || []));
+      setAllBookings(data || []);
     }
     setAllLoading(false);
   };
@@ -243,20 +260,37 @@ export default function Profile() {
     setAllProfilesLoading(false);
   };
 
-  const handleBanToggle = async (id: string, next: boolean) => {
+  const handleBanToggle = async (id: string, next: boolean, reason?: string) => {
     if (!isOwner) return;
     setBanning((p) => ({ ...p, [id]: true }));
     try {
-      const { error } = await supabase.functions.invoke("admin-set-ban", { body: { userId: id, banned: next } });
+      const { error } = await supabase.functions.invoke("admin-set-ban", {
+        body: { userId: id, banned: next, reason: reason || "Banned by admin", adminId: user?.id },
+      });
       if (error) throw error;
       setAllProfiles((list) => list.map((u) => (u.id === id ? { ...u, banned: next } : u)));
-      toast.success(next ? "User banned" : "User unbanned");
+      toast.success(next ? "User banned successfully" : "User unbanned successfully");
     } catch (e: any) {
       console.error("Ban toggle error:", e);
       toast.error(e.message || "Failed to update ban status");
     } finally {
       setBanning((p) => ({ ...p, [id]: false }));
     }
+  };
+
+  // AI Assistant callback: Cancel booking
+  const handleAICancelBooking = async (bookingId: string) => {
+    const booking = allBookings.find((b) => b.id === bookingId);
+    if (booking) {
+      await handleCancelBooking(booking);
+    }
+  };
+
+  // AI Assistant callback: Toggle testing mode
+  const handleAIToggleTestingMode = (enabled: boolean) => {
+    setTestingMode(enabled);
+    localStorage.setItem("owner_testing_mode", enabled.toString());
+    toast.success(enabled ? "Testing mode enabled" : "Testing mode disabled");
   };
 
   const handleLogout = async () => {
@@ -310,6 +344,8 @@ export default function Profile() {
         return <XCircle className="h-4 w-4 text-red-500" />;
       case "in-progress":
         return <Clock className="h-4 w-4 text-blue-500" />;
+      case "on-the-way":
+        return <Clock className="h-4 w-4 text-blue-500" />;
       default:
         return <Package className="h-4 w-4 text-yellow-500" />;
     }
@@ -323,32 +359,35 @@ export default function Profile() {
         return "bg-red-500/10 text-red-500 border-red-500/20";
       case "in-progress":
         return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+      case "on-the-way":
+        return "bg-blue-500/10 text-blue-500 border-blue-500/20";
       default:
         return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
     }
   };
 
-  const activeBookings = bookings.filter((b) => b.status === "scheduled" || b.status === "in-progress");
+  const activeBookings = bookings.filter((b) => b.status === "scheduled" || b.status === "in-progress" || b.status === "on-the-way");
   const pastBookings = bookings.filter((b) => b.status === "completed" || b.status === "cancelled");
 
   const handleCancelBooking = async (booking: Booking) => {
     if (!user) return;
     setCancelling((prev) => ({ ...prev, [booking.id]: true }));
     try {
-      const qb = supabase.from("bookings").update({ status: "cancelled" }).eq("id", booking.id);
-      if (!isOwner) qb.eq("user_id", user.id);
-      const { error: updateError } = await qb;
+      const { error: updateError } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .eq("id", booking.id);
       if (updateError) throw updateError;
 
       const servicesList = Array.isArray(booking.services) ? (booking.services as any[]).map((s: any) => s.name || String(s)) : [];
 
       try {
-        const { error: emailError } = await supabase.functions.invoke("send-cancellation-email", {
+        await supabase.functions.invoke("send-cancellation-email", {
           body: {
             bookingNumber: booking.booking_number,
-            name: (booking as any).full_name || profile?.full_name || "",
-            email: (booking as any).email || profile?.email || "",
-            phone: (booking as any).phone || profile?.phone || "",
+            name: booking.full_name || profile?.full_name || "",
+            email: booking.email || profile?.email || "",
+            phone: booking.phone || profile?.phone || "",
             address: booking.address,
             date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
             time: booking.service_time,
@@ -357,24 +396,8 @@ export default function Profile() {
             reason: cancelReasons[booking.id] || "",
           },
         });
-        if (emailError) throw emailError;
       } catch (err) {
-        await fetch("/api/send-cancellation-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bookingNumber: booking.booking_number,
-            name: (booking as any).full_name || profile?.full_name || "",
-            email: (booking as any).email || profile?.email || "",
-            phone: (booking as any).phone || profile?.phone || "",
-            address: booking.address,
-            date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
-            time: booking.service_time,
-            services: servicesList,
-            totalAmount: booking.total_amount,
-            reason: cancelReasons[booking.id] || "",
-          }),
-        });
+        console.error("Email send error:", err);
       }
 
       setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "cancelled" } : b)));
@@ -385,7 +408,6 @@ export default function Profile() {
       toast.error(e.message || "Failed to cancel booking");
     } finally {
       setCancelling((prev) => ({ ...prev, [booking.id]: false }));
-      setOverride(booking.id, { status: "cancelled" });
     }
   };
 
@@ -393,18 +415,19 @@ export default function Profile() {
     if (!user) return;
     setCompleting((prev) => ({ ...prev, [booking.id]: true }));
     try {
-      const qb = supabase.from("bookings").update({ status: "completed" }).eq("id", booking.id);
-      if (!isOwner) qb.eq("user_id", user.id);
-      const { error: updateError } = await qb;
+      const { error: updateError } = await supabase
+        .from("bookings")
+        .update({ status: "completed" })
+        .eq("id", booking.id);
       if (updateError) throw updateError;
 
       const servicesList = Array.isArray(booking.services) ? (booking.services as any[]).map((s: any) => s.name || String(s)) : [];
       try {
-        const { error } = await supabase.functions.invoke("send-completion-email", {
+        await supabase.functions.invoke("send-completion-email", {
           body: {
             bookingNumber: booking.booking_number,
-            name: (booking as any).full_name || profile?.full_name || "",
-            email: (booking as any).email || profile?.email || "",
+            name: booking.full_name || profile?.full_name || "",
+            email: booking.email || profile?.email || "",
             address: booking.address,
             date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
             time: booking.service_time,
@@ -412,22 +435,8 @@ export default function Profile() {
             totalAmount: booking.total_amount,
           },
         });
-        if (error) throw error;
       } catch (err) {
-        await fetch("/api/send-completion-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            bookingNumber: booking.booking_number,
-            name: (booking as any).full_name || profile?.full_name || "",
-            email: (booking as any).email || profile?.email || "",
-            address: booking.address,
-            date: booking.service_date ? format(new Date(booking.service_date), "PPP") : "",
-            time: booking.service_time,
-            services: servicesList,
-            totalAmount: booking.total_amount,
-          }),
-        });
+        console.error("Email send error:", err);
       }
 
       setBookings((prev) => prev.map((b) => (b.id === booking.id ? { ...b, status: "completed" } : b)));
@@ -438,7 +447,6 @@ export default function Profile() {
       toast.error(e.message || "Failed to complete booking");
     } finally {
       setCompleting((prev) => ({ ...prev, [booking.id]: false }));
-      setOverride(booking.id, { status: "completed" });
     }
   };
 
@@ -448,6 +456,43 @@ export default function Profile() {
     const matchStatus = ownerFilterStatus === "all" || b.status === ownerFilterStatus;
     return matchText && matchStatus;
   });
+
+  // Show banned message if user is banned
+  if (isBanned && !isOwner) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center">
+        <Card className="max-w-md mx-4">
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+              <ShieldAlert className="w-8 h-8 text-red-500" />
+            </div>
+            <CardTitle className="text-red-500">Account Suspended</CardTitle>
+            <CardDescription>
+              Your account has been suspended and you cannot access this page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {profile?.ban_reason && (
+              <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                <p className="text-sm text-muted-foreground mb-1">Reason:</p>
+                <p className="font-medium">{profile.ban_reason}</p>
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground text-center">
+              If you believe this is a mistake, please contact us at{" "}
+              <a href="mailto:support@rwdetails.com" className="text-primary hover:underline">
+                support@rwdetails.com
+              </a>
+            </p>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/")}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
@@ -592,7 +637,7 @@ export default function Profile() {
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
-                              <AlertDialogDescription>This action cannot be undone. We’ll notify RWDetailz and the customer via email.</AlertDialogDescription>
+                              <AlertDialogDescription>This action cannot be undone. We'll notify RWDetailz and the customer via email.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <div className="space-y-2">
                               <Label htmlFor={`reason-${booking.id}`}>Reason (optional)</Label>
@@ -613,9 +658,15 @@ export default function Profile() {
 
             {isOwner && (
               <TabsContent value="owner" className="space-y-4 mt-6">
-                <OwnerAIChat bookings={allBookings} />
+                {/* AI Assistant with callbacks */}
+                <OwnerAIChat
+                  bookings={allBookings}
+                  onCancelBooking={handleAICancelBooking}
+                  onToggleTestingMode={handleAIToggleTestingMode}
+                  testingMode={testingMode}
+                />
                 
-                {/* Detailer Location Tracker - for sharing location with customers */}
+                {/* Detailer Location Tracker */}
                 <DetailerTracker />
                 
                 <Card>
@@ -655,6 +706,7 @@ export default function Profile() {
                           <SelectContent>
                             <SelectItem value="all">All</SelectItem>
                             <SelectItem value="scheduled">scheduled</SelectItem>
+                            <SelectItem value="on-the-way">on-the-way</SelectItem>
                             <SelectItem value="in-progress">in-progress</SelectItem>
                             <SelectItem value="completed">completed</SelectItem>
                             <SelectItem value="cancelled">cancelled</SelectItem>
@@ -672,9 +724,6 @@ export default function Profile() {
                   <Card><CardContent className="py-12 text-center"><Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" /><p className="text-muted-foreground">No bookings found</p></CardContent></Card>
                 ) : (
                   ownerFilteredBookings.map((booking) => {
-                    const overrides = readOverrides();
-                    const crewName = (overrides[booking.id] as any)?.crew_name || (booking as any).crew_name || "";
-                    const etaMinutes = (overrides[booking.id] as any)?.eta_minutes || (booking as any).eta_minutes || "";
                     const trackingActive = !!trackingOn[booking.id];
                     return (
                       <Card key={booking.id} className="hover-lift">
@@ -708,23 +757,36 @@ export default function Profile() {
                             </div>
                           </div>
 
+                          {/* FIX: Crew Name and ETA now save to DATABASE */}
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div>
-                              <Label>Crew Name</Label>
-                              <Input defaultValue={crewName} onBlur={(e) => saveOwnerMeta(booking, { crew_name: e.target.value })} placeholder="Crew member" />
+                              <Label>Crew Name (saves to DB)</Label>
+                              <Input
+                                defaultValue={booking.crew_name || ""}
+                                onBlur={(e) => saveOwnerMeta(booking, { crew_name: e.target.value })}
+                                placeholder="Crew member name"
+                              />
                             </div>
                             <div>
-                              <Label>ETA (minutes)</Label>
-                              <Input type="number" defaultValue={etaMinutes} onBlur={(e) => saveOwnerMeta(booking, { eta_minutes: Number(e.target.value || 0) })} placeholder="15" />
+                              <Label>ETA (minutes - saves to DB)</Label>
+                              <Input
+                                type="number"
+                                defaultValue={booking.eta_minutes || ""}
+                                onBlur={(e) => saveOwnerMeta(booking, { eta_minutes: Number(e.target.value || 0) })}
+                                placeholder="15"
+                              />
                             </div>
                             <div className="flex items-end gap-2">
+                              {booking.status !== "on-the-way" && booking.status !== "in-progress" && booking.status !== "completed" && (
+                                <Button variant="secondary" onClick={() => setStatus(booking, "on-the-way")}>On the Way</Button>
+                              )}
                               {booking.status !== "in-progress" && booking.status !== "completed" && (
-                                <Button variant="secondary" onClick={() => setStatus(booking, "in-progress")}>Set In-Progress</Button>
+                                <Button variant="secondary" onClick={() => setStatus(booking, "in-progress")}>In Progress</Button>
                               )}
                               {booking.status !== "completed" && (
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
-                                    <Button variant="secondary" disabled={!!completing[booking.id]}>{completing[booking.id] ? "Completing..." : "Mark Completed"}</Button>
+                                    <Button variant="secondary" disabled={!!completing[booking.id]}>{completing[booking.id] ? "Completing..." : "Complete"}</Button>
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
@@ -792,8 +854,8 @@ export default function Profile() {
                 <Separator />
                 <Card>
                   <CardHeader>
-                    <CardTitle>Users</CardTitle>
-                    <CardDescription>Ban or unban accounts</CardDescription>
+                    <CardTitle className="flex items-center gap-2"><Ban className="w-4 h-4" /> User Management</CardTitle>
+                    <CardDescription>Ban or unban user accounts</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {allProfilesLoading ? (
@@ -818,12 +880,24 @@ export default function Profile() {
                                 <td className="py-2">{u.email}</td>
                                 <td className="py-2">{u.phone || "-"}</td>
                                 <td className="py-2">{u.created_at ? format(new Date(u.created_at), "PP") : "-"}</td>
-                                <td className="py-2">{(u as any).banned ? (<Badge variant="destructive">banned</Badge>) : (<Badge className="bg-green-500/10 text-green-500 border-green-500/20">active</Badge>)}</td>
-                                <td className="py-2 text-right">{(u as any).banned ? (
-                                  <Button size="sm" variant="outline" disabled={!!banning[u.id]} onClick={() => handleBanToggle(u.id, false)}>{banning[u.id] ? "Updating..." : "Unban"}</Button>
-                                ) : (
-                                  <Button size="sm" variant="destructive" disabled={!!banning[u.id]} onClick={() => handleBanToggle(u.id, true)}>{banning[u.id] ? "Updating..." : "Ban"}</Button>
-                                )}</td>
+                                <td className="py-2">
+                                  {u.banned ? (
+                                    <Badge variant="destructive">Banned</Badge>
+                                  ) : (
+                                    <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Active</Badge>
+                                  )}
+                                </td>
+                                <td className="py-2 text-right">
+                                  {u.banned ? (
+                                    <Button size="sm" variant="outline" disabled={!!banning[u.id]} onClick={() => handleBanToggle(u.id, false)}>
+                                      {banning[u.id] ? "Updating..." : "Unban"}
+                                    </Button>
+                                  ) : (
+                                    <Button size="sm" variant="destructive" disabled={!!banning[u.id]} onClick={() => handleBanToggle(u.id, true)}>
+                                      {banning[u.id] ? "Updating..." : "Ban"}
+                                    </Button>
+                                  )}
+                                </td>
                               </tr>
                             ))}
                           </tbody>

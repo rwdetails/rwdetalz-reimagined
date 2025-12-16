@@ -19,6 +19,7 @@ export type Database = {
           address: string
           booking_number: string
           created_at: string | null
+          crew_name: string | null
           customer_lat: number | null
           customer_lng: number | null
           detailer_lat: number | null
@@ -29,6 +30,7 @@ export type Database = {
           full_name: string
           how_heard: string | null
           id: string
+          is_quote: boolean | null
           payment_method: string | null
           payment_status: string | null
           phone: string
@@ -47,6 +49,7 @@ export type Database = {
           address: string
           booking_number: string
           created_at?: string | null
+          crew_name?: string | null
           customer_lat?: number | null
           customer_lng?: number | null
           detailer_lat?: number | null
@@ -57,6 +60,7 @@ export type Database = {
           full_name: string
           how_heard?: string | null
           id?: string
+          is_quote?: boolean | null
           payment_method?: string | null
           payment_status?: string | null
           phone: string
@@ -75,6 +79,7 @@ export type Database = {
           address?: string
           booking_number?: string
           created_at?: string | null
+          crew_name?: string | null
           customer_lat?: number | null
           customer_lng?: number | null
           detailer_lat?: number | null
@@ -85,6 +90,7 @@ export type Database = {
           full_name?: string
           how_heard?: string | null
           id?: string
+          is_quote?: boolean | null
           payment_method?: string | null
           payment_status?: string | null
           phone?: string
@@ -111,6 +117,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ban_reason: string | null
+          banned: boolean | null
+          banned_at: string | null
+          banned_by: string | null
           created_at: string | null
           email: string
           full_name: string
@@ -119,6 +129,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ban_reason?: string | null
+          banned?: boolean | null
+          banned_at?: string | null
+          banned_by?: string | null
           created_at?: string | null
           email: string
           full_name: string
@@ -127,6 +141,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ban_reason?: string | null
+          banned?: boolean | null
+          banned_at?: string | null
+          banned_by?: string | null
           created_at?: string | null
           email?: string
           full_name?: string

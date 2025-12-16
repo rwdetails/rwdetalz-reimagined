@@ -2,13 +2,13 @@
  * CustomerLiveTracker Component
  * 
  * Purpose: Allows customers to view real-time location of their detailer
- * Shows a map with the detailer's position, status updates, and ETA.
+ * Shows a map with the detailer's position, status updates, ETA, and crew name.
  * 
- * Features:
- * - Real-time location updates via Supabase Realtime
- * - Interactive map with moving marker
- * - Status timeline showing service progress
- * - ETA display based on detailer location
+ * FIXES APPLIED:
+ * - ETA now displays correctly from database
+ * - Crew name displays correctly
+ * - Tracking activates automatically for on-the-way/in-progress status
+ * - Fallback UI messages for missing data
  * 
  * Security: Only shows tracking for the customer's own booking
  */
@@ -29,7 +29,9 @@ import {
   Car,
   Navigation,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  User,
+  AlertCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -104,16 +106,18 @@ const CustomerLiveTracker = () => {
       const { data, error } = await supabase
         .from("bookings")
         .select("*")
-        .eq("booking_number", bookingNumber.trim())
+        .eq("booking_number", bookingNumber.trim().toUpperCase())
         .single();
 
       if (error || !data) {
-        toast.error("Booking not found");
+        toast.error("Booking not found. Please check your booking number.");
         setBooking(null);
         setIsLive(false);
       } else {
         setBooking(data);
-        setIsLive(data.tracking_enabled || false);
+        // FIX: Auto-enable live view when status indicates active service
+        const isActiveStatus = ["on-the-way", "arrived", "in-progress"].includes(data.status);
+        setIsLive(data.tracking_enabled || isActiveStatus);
         toast.success("Booking found!");
         
         // Subscribe to realtime updates for this booking
@@ -150,7 +154,10 @@ const CustomerLiveTracker = () => {
         (payload) => {
           console.log('Realtime update received:', payload);
           setBooking((prev: any) => ({ ...prev, ...payload.new }));
-          setIsLive(payload.new.tracking_enabled || false);
+          // FIX: Update live status based on tracking_enabled OR active status
+          const newData = payload.new as any;
+          const isActiveStatus = ["on-the-way", "arrived", "in-progress"].includes(newData.status);
+          setIsLive(newData.tracking_enabled || isActiveStatus);
         }
       )
       .subscribe();
@@ -165,14 +172,6 @@ const CustomerLiveTracker = () => {
     return STATUS_CONFIG.findIndex(s => s.value === booking?.status) || 0;
   };
 
-  /**
-   * Get status badge color
-   */
-  const getStatusBadgeColor = () => {
-    const status = STATUS_CONFIG.find(s => s.value === booking?.status);
-    return status ? `${status.bgColor}/20 ${status.color} border-${status.color.replace('text-', '')}/30` : '';
-  };
-
   // Cleanup subscription on unmount
   useEffect(() => {
     return () => {
@@ -183,6 +182,8 @@ const CustomerLiveTracker = () => {
   }, []);
 
   const hasLocation = booking?.detailer_lat && booking?.detailer_lng;
+  const hasCrewName = booking?.crew_name;
+  const hasETA = booking?.eta_minutes !== null && booking?.eta_minutes !== undefined;
 
   return (
     <section id="live-track" className="py-24 px-4">
@@ -218,7 +219,7 @@ const CustomerLiveTracker = () => {
                   id="track-booking"
                   placeholder="RW-XXXXXX"
                   value={bookingNumber}
-                  onChange={(e) => setBookingNumber(e.target.value)}
+                  onChange={(e) => setBookingNumber(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 />
               </div>
@@ -237,6 +238,69 @@ const CustomerLiveTracker = () => {
         {/* Booking Details & Tracking */}
         {booking && (
           <div className="space-y-6 animate-fade-in">
+            {/* Crew & ETA Info Card - NEW */}
+            <Card className="glass-card border-primary/20">
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Assigned Detailer */}
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <User className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Your Detailer</p>
+                      <p className="font-bold text-lg">
+                        {hasCrewName ? booking.crew_name : (
+                          <span className="text-muted-foreground italic">Assigning...</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* ETA Display - FIXED */}
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">ETA</p>
+                      <p className="font-bold text-lg">
+                        {booking.status === "completed" ? (
+                          <span className="text-green-500">Completed</span>
+                        ) : booking.status === "arrived" ? (
+                          <span className="text-purple-500">Arrived!</span>
+                        ) : hasETA ? (
+                          <span className="text-primary">{booking.eta_minutes} min</span>
+                        ) : (
+                          <span className="text-muted-foreground italic flex items-center gap-1">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Calculating...
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Last Update */}
+                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
+                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                      <RefreshCw className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Last Update</p>
+                      <p className="font-bold text-lg">
+                        {booking.detailer_updated_at ? (
+                          format(new Date(booking.detailer_updated_at), 'h:mm:ss a')
+                        ) : (
+                          <span className="text-muted-foreground italic">Waiting...</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Status Timeline */}
             <Card className="glass-card">
               <CardHeader>
@@ -300,43 +364,27 @@ const CustomerLiveTracker = () => {
                   })}
                 </div>
 
-                {/* Current Status & ETA */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="glass-card p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Current Status</p>
-                    <p className="text-lg font-bold text-primary capitalize">
-                      {booking.status?.replace('-', ' ') || 'Scheduled'}
-                    </p>
-                  </div>
-                  <div className="glass-card p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">ETA</p>
-                    <p className="text-lg font-bold">
-                      {booking.eta_minutes 
-                        ? `${booking.eta_minutes} min` 
-                        : booking.status === 'completed' 
-                        ? 'Completed' 
-                        : 'Calculating...'}
-                    </p>
-                  </div>
-                  <div className="glass-card p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">Last Update</p>
-                    <p className="text-lg font-bold">
-                      {booking.detailer_updated_at 
-                        ? format(new Date(booking.detailer_updated_at), 'h:mm:ss a')
-                        : 'Waiting...'}
-                    </p>
-                  </div>
+                {/* Current Status Display */}
+                <div className="text-center p-4 rounded-lg bg-muted/30">
+                  <p className="text-2xl font-bold text-primary capitalize">
+                    {booking.status?.replace('-', ' ') || 'Scheduled'}
+                  </p>
                 </div>
               </CardContent>
             </Card>
 
             {/* Live Map */}
-            {hasLocation && (
+            {hasLocation ? (
               <Card className="glass-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-primary" />
                     Live Location
+                    {hasCrewName && (
+                      <span className="text-muted-foreground font-normal text-sm">
+                        — {booking.crew_name}
+                      </span>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -358,8 +406,9 @@ const CustomerLiveTracker = () => {
                       >
                         <Popup>
                           <div className="text-center">
-                            <strong>RW Details</strong>
+                            <strong>{hasCrewName ? booking.crew_name : "RW Details"}</strong>
                             <p className="text-sm capitalize">{booking.status?.replace('-', ' ')}</p>
+                            {hasETA && <p className="text-xs text-muted-foreground">ETA: {booking.eta_minutes} min</p>}
                           </div>
                         </Popup>
                       </Marker>
@@ -395,6 +444,23 @@ const CustomerLiveTracker = () => {
                       Refresh
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+            ) : (
+              /* No location available yet - show helpful message */
+              <Card className="glass-card">
+                <CardContent className="py-12 text-center">
+                  <AlertCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Location Not Available Yet</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    {booking.status === "scheduled" 
+                      ? "Your detailer will start sharing their location when they're on the way."
+                      : "Waiting for location data. The detailer may be in an area with poor GPS signal."}
+                  </p>
+                  <Button variant="outline" className="mt-4" onClick={handleSearch}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Check Again
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -443,16 +509,14 @@ const CustomerLiveTracker = () => {
           </div>
         )}
 
-        {/* No tracking message */}
-        {booking && !isLive && !hasLocation && (
-          <Card className="glass-card animate-fade-in">
+        {/* No booking searched yet */}
+        {!booking && !searching && (
+          <Card className="glass-card">
             <CardContent className="py-12 text-center">
-              <Clock className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-xl font-bold mb-2">Tracking Not Started</h3>
+              <Navigation className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Enter Your Booking Number</h3>
               <p className="text-muted-foreground">
-                Your detailer hasn't started sharing their location yet.
-                <br />
-                You'll see live tracking once they're on the way.
+                Find your booking number in the confirmation email we sent you.
               </p>
             </CardContent>
           </Card>
