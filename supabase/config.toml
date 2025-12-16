@@ -2,3 +2,21 @@ project_id = "jyyaywevbpowgkipvhaz"
 
 [functions.send-booking-email]
 verify_jwt = false
+
+[functions.send-contact-email]
+verify_jwt = false
+
+[functions.send-cancellation-email]
+verify_jwt = false
+
+[functions.send-completion-email]
+verify_jwt = false
+
+[functions.update-detailer-location]
+verify_jwt = false
+
+[functions.owner-ai-chat]
+verify_jwt = false
+
+[functions.admin-set-ban]
+verify_jwt = false
