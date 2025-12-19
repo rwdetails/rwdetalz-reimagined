@@ -8,10 +8,10 @@
  * - Toggle testing mode
  * - View customer details
  * 
- * All admin actions are logged and role-based
+ * Features typing animation for AI responses
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +40,7 @@ interface BookingLite {
 interface Msg {
   role: "user" | "assistant";
   content: string;
+  isTyping?: boolean;
 }
 
 interface OwnerAIChatProps {
@@ -48,6 +49,17 @@ interface OwnerAIChatProps {
   onBanUser?: (userId: string, banned: boolean) => void;
   onToggleTestingMode?: (enabled: boolean) => void;
   testingMode?: boolean;
+}
+
+// Typing animation component
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-1 px-3 py-2">
+      <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
+      <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
+      <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
+    </div>
+  );
 }
 
 export default function OwnerAIChat({
@@ -73,6 +85,8 @@ What would you like to do?`,
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [typingText, setTypingText] = useState("");
+  const [isTypingAnimation, setIsTypingAnimation] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
 
   // Prepare context for AI including bookings and quotes
@@ -109,6 +123,25 @@ What would you like to do?`,
         container.scrollTop = container.scrollHeight;
       }
     }
+  };
+
+  // Typing animation effect
+  const animateTyping = async (fullText: string) => {
+    setIsTypingAnimation(true);
+    setTypingText("");
+    
+    const words = fullText.split(" ");
+    let currentText = "";
+    
+    for (let i = 0; i < words.length; i++) {
+      currentText += (i === 0 ? "" : " ") + words[i];
+      setTypingText(currentText);
+      await new Promise(resolve => setTimeout(resolve, 30)); // 30ms per word
+      scrollToBottom();
+    }
+    
+    setIsTypingAnimation(false);
+    return fullText;
   };
 
   // Process AI commands locally before sending to AI
@@ -159,11 +192,24 @@ What would you like to do?`,
       // Check for local commands first
       const localResponse = processLocalCommands(content);
       if (localResponse) {
-        setMessages((prev) => [...prev, { role: "assistant", content: localResponse }]);
+        // Add typing indicator
+        setMessages((prev) => [...prev, { role: "assistant", content: "", isTyping: true }]);
+        
+        // Animate the response
+        await animateTyping(localResponse);
+        
+        // Replace typing message with final message
+        setMessages((prev) => [
+          ...prev.slice(0, -1),
+          { role: "assistant", content: localResponse }
+        ]);
         setLoading(false);
         setTimeout(scrollToBottom, 50);
         return;
       }
+
+      // Add typing indicator
+      setMessages((prev) => [...prev, { role: "assistant", content: "", isTyping: true }]);
 
       // Send to AI for complex queries
       const { data, error } = await supabase.functions.invoke("owner-ai-chat", {
@@ -172,16 +218,26 @@ What would you like to do?`,
 
       if (error) throw error;
       const reply = (data as any)?.content || "I couldn't process that request. Please try again.";
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      
+      // Animate the response
+      await animateTyping(reply);
+      
+      // Replace typing message with final message
+      setMessages((prev) => [
+        ...prev.slice(0, -1),
+        { role: "assistant", content: reply }
+      ]);
     } catch (e: any) {
       console.error("AI request failed:", e);
       toast.error(e?.message || "AI request failed.");
       setMessages((prev) => [
-        ...prev,
+        ...prev.filter(m => !m.isTyping),
         { role: "assistant", content: "Sorry, I encountered an error. Please try again." },
       ]);
     } finally {
       setLoading(false);
+      setTypingText("");
+      setIsTypingAnimation(false);
       setTimeout(scrollToBottom, 50);
     }
   };
@@ -222,7 +278,11 @@ What would you like to do?`,
                     : "bg-primary text-primary-foreground"
                 }`}
               >
-                {m.content}
+                {m.isTyping ? (
+                  isTypingAnimation && typingText ? typingText : <TypingIndicator />
+                ) : (
+                  m.content
+                )}
               </div>
               {m.role === "user" && (
                 <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
