@@ -309,14 +309,19 @@ export default function Profile() {
     }
   };
 
-  // Send password reset email to a user (admin function)
-  const handleSendPasswordReset = async (email: string) => {
+  // Send custom password reset email to a user (admin function)
+  const handleSendPasswordReset = async (targetEmail: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
+      const { data, error } = await supabase.functions.invoke("send-password-reset", {
+        body: { 
+          email: targetEmail, 
+          adminTriggered: true, 
+          adminId: user?.id 
+        },
       });
       if (error) throw error;
-      toast.success(`Password reset email sent to ${email}`);
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Password reset email sent to ${targetEmail}`);
     } catch (e: any) {
       console.error("Password reset error:", e);
       toast.error(e.message || "Failed to send password reset email");
