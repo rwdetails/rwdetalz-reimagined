@@ -294,9 +294,33 @@ export default function Profile() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast.success("Logged out successfully");
-    navigate("/");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      // Clear any local state
+      setUser(null);
+      setProfile(null);
+      setBookings([]);
+      toast.success("Logged out successfully");
+      navigate("/");
+    } catch (e: any) {
+      console.error("Logout error:", e);
+      toast.error(e.message || "Failed to logout");
+    }
+  };
+
+  // Send password reset email to a user (admin function)
+  const handleSendPasswordReset = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      if (error) throw error;
+      toast.success(`Password reset email sent to ${email}`);
+    } catch (e: any) {
+      console.error("Password reset error:", e);
+      toast.error(e.message || "Failed to send password reset email");
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -855,7 +879,7 @@ export default function Profile() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Ban className="w-4 h-4" /> User Management</CardTitle>
-                    <CardDescription>Ban or unban user accounts</CardDescription>
+                    <CardDescription>Ban, unban, or send password reset to user accounts</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {allProfilesLoading ? (
@@ -882,12 +906,27 @@ export default function Profile() {
                                 <td className="py-2">{u.created_at ? format(new Date(u.created_at), "PP") : "-"}</td>
                                 <td className="py-2">
                                   {u.banned ? (
-                                    <Badge variant="destructive">Banned</Badge>
+                                    <div>
+                                      <Badge variant="destructive">Banned</Badge>
+                                      {u.ban_reason && (
+                                        <p className="text-xs text-muted-foreground mt-1 max-w-[150px] truncate" title={u.ban_reason}>
+                                          {u.ban_reason}
+                                        </p>
+                                      )}
+                                    </div>
                                   ) : (
                                     <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Active</Badge>
                                   )}
                                 </td>
-                                <td className="py-2 text-right">
+                                <td className="py-2 text-right space-x-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => handleSendPasswordReset(u.email)}
+                                    title="Send password reset email"
+                                  >
+                                    Reset Pwd
+                                  </Button>
                                   {u.banned ? (
                                     <Button size="sm" variant="outline" disabled={!!banning[u.id]} onClick={() => handleBanToggle(u.id, false)}>
                                       {banning[u.id] ? "Updating..." : "Unban"}

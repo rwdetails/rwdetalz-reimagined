@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Phone, User as UserIcon, Lock, Chrome } from "lucide-react";
+import { Mail, Phone, User as UserIcon, Lock, Chrome, ArrowLeft, KeyRound } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -24,6 +24,11 @@ export default function Auth() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupLoading, setSignupLoading] = useState(false);
+
+  // Forgot password
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -77,6 +82,27 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) {
+      toast.error("Please enter your email address");
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      if (error) throw error;
+      setForgotSent(true);
+      toast.success("Password reset email sent! Check your inbox.");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to send reset email.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-accent/20 p-4">
       <Card className="w-full max-w-md">
@@ -88,9 +114,10 @@ export default function Auth() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="forgot">Forgot</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin">
@@ -135,6 +162,41 @@ export default function Auth() {
                   {signupLoading ? "Creating Account..." : "Create Account"}
                 </Button>
               </form>
+            </TabsContent>
+
+            <TabsContent value="forgot">
+              {forgotSent ? (
+                <div className="text-center space-y-4 py-6">
+                  <KeyRound className="w-12 h-12 mx-auto text-primary" />
+                  <h3 className="font-semibold text-lg">Check Your Email</h3>
+                  <p className="text-muted-foreground text-sm">
+                    We've sent a password reset link to <strong>{forgotEmail}</strong>
+                  </p>
+                  <Button variant="outline" onClick={() => setForgotSent(false)} className="mt-4">
+                    <ArrowLeft className="w-4 h-4 mr-2" /> Try Another Email
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Enter your email and we'll send you a link to reset your password.
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="forgot-email"><Mail className="inline w-4 h-4 mr-1"/> Email</Label>
+                    <Input 
+                      id="forgot-email" 
+                      type="email" 
+                      placeholder="you@example.com"
+                      value={forgotEmail} 
+                      onChange={(e) => setForgotEmail(e.target.value)} 
+                      required 
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={forgotLoading}>
+                    {forgotLoading ? "Sending..." : "Send Reset Link"}
+                  </Button>
+                </form>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>

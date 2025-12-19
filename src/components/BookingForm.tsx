@@ -14,11 +14,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
+// Service definitions with promotional pricing
+// isQuote: true means it's a quote-based service (no vehicle details needed)
+// originalPrice: shows crossed-out price for promotional display
 const services = [
   { 
     id: "pressure-washing", 
     name: "Pressure Washing", 
-    price: 150, 
+    price: 99,
+    originalPrice: 129,
     image: "🏠",
     isQuote: true,
     addons: [
@@ -29,14 +33,15 @@ const services = [
       { id: "walkway", name: "Walkway", price: 0 },
     ]
   },
-  { id: "driveway", name: "Driveway Cleaning", price: 120, image: "🚗", isQuote: true },
+  { id: "driveway", name: "Driveway Cleaning", price: 99, originalPrice: 129, image: "🚗", isQuote: true },
   { id: "trash-can", name: "Trash Can Cleaning", price: 50, image: "🗑️", isQuote: false },
-  { id: "roof", name: "Roof Cleaning", price: 200, image: "🏚️", isQuote: true },
-  { id: "gutter", name: "Gutter Cleaning", price: 75, image: "🏠", isQuote: false },
+  { id: "roof", name: "Roof Cleaning", price: 99, originalPrice: 129, image: "🏚️", isQuote: true },
+  { id: "gutter", name: "Gutter Cleaning", price: 99, originalPrice: 129, image: "🏠", isQuote: true },
   { 
     id: "vehicle-detailing", 
     name: "Vehicle Detailing", 
-    price: 89.99, 
+    price: 99,
+    originalPrice: 129,
     image: "🚙",
     isNew: true,
     isQuote: true,
@@ -370,7 +375,18 @@ const BookingForm = ({ onClose }: BookingFormProps) => {
                         </div>
                         <div>
                           <h4 className="font-bold">{service.name}</h4>
-                          <p className="text-primary font-semibold">${service.price}</p>
+                          <div className="flex items-center gap-2">
+                            {(service as any).originalPrice && (
+                              <span className="text-muted-foreground line-through text-sm">${(service as any).originalPrice}</span>
+                            )}
+                            <span className="text-primary font-semibold">${service.price}</span>
+                            {(service as any).originalPrice && (
+                              <span className="text-xs bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-semibold">SAVE ${(service as any).originalPrice - service.price}</span>
+                            )}
+                          </div>
+                          {service.isQuote && (
+                            <span className="text-xs text-muted-foreground">Quote Request</span>
+                          )}
                         </div>
                       </div>
                       <Checkbox checked={formData.services.includes(service.id)} />
